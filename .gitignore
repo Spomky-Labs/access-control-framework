@@ -1,0 +1,10 @@
+/vendor/
+/composer.lock
+/node_modules/
+/.castor.stub.php
+/infection.txt
+/report.md
+/.ci-tools/coverage
+/.ci-tools/.phpunit.cache
+/tmp*
+.*.cache

@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AccessControl\Tests\Bundle\Functional;
+
+use AccessControl\AccessOutcome;
+use AccessControl\AccessRequest;
+use AccessControl\VoterInterface;
+
+/**
+ * An application voter, reached through autoconfiguration alone.
+ */
+final class PermissionVoter implements VoterInterface
+{
+    public function supportsAttribute(mixed $attribute): bool
+    {
+        return \in_array($attribute, ['EDIT', 'DELETE'], true);
+    }
+
+    public function supportsSubject(mixed $subject): bool
+    {
+        return true;
+    }
+
+    public function vote(AccessRequest $accessRequest): AccessOutcome
+    {
+        return 'EDIT' === $accessRequest->attribute
+            ? AccessOutcome::grant('Everyone may edit around here.')
+            : AccessOutcome::deny('Deleting is reserved.');
+    }
+}

@@ -1,0 +1,407 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block page_title 'Access Control' %}
+
+{% block head %}
+    {{ parent() }}
+
+    <style>
+        #collector-content .decision-log .query-header td {
+            background: var(--table-header-background);
+            border-top: 2px solid var(--table-border);
+            border-bottom: 0;
+            font-weight: bold;
+        }
+
+        #collector-content .decision-log .query-header .origin {
+            font-weight: normal;
+            font-family: var(--font-family-monospace);
+            font-size: 12px;
+        }
+
+        #collector-content .decision-log .policy-row td {
+            border-top-width: 1px;
+            border-bottom-width: 0;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            background: var(--gray-100, transparent);
+        }
+
+        #collector-content .decision-log .policy-row .policy-reason {
+            font-family: var(--font-family-system);
+            font-size: 12px;
+        }
+
+        #collector-content .decision-log .decision-result td {
+            border-top-width: 1px;
+            border-bottom-width: 0;
+            padding-bottom: 0;
+        }
+
+        #collector-content .decision-log .decision-details td {
+            border-top-width: 0;
+            border-bottom-width: 1px;
+            padding-bottom: 0;
+        }
+
+        #collector-content .decision-log .decision-details table {
+            border: 0;
+            margin: 0;
+            box-shadow: unset;
+        }
+
+        #collector-content .decision-log .decision-details table td {
+            border: 0;
+            padding: 0 8px 8px 0;
+            vertical-align: top;
+        }
+
+        #collector-content .decision-log .nested {
+            color: var(--color-muted);
+            padding-right: 4px;
+        }
+    </style>
+{% endblock %}
+
+{% block toolbar %}
+    {% if collector.decisionCount %}
+        {% set status_color = collector.deniedCount ? 'red' %}
+
+        {% set icon %}
+            {{ source('@AccessControl/Icon/access-control.svg') }}
+            <span class="sf-toolbar-value">{{ collector.decisionCount }}</span>
+        {% endset %}
+
+        {% set text %}
+            <div class="sf-toolbar-info-piece">
+                <b>Questions</b>
+                <span class="sf-toolbar-status">{{ collector.queries|length }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Decisions</b>
+                <span class="sf-toolbar-status">{{ collector.decisionCount }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Granted</b>
+                <span class="sf-toolbar-status sf-toolbar-status-green">{{ collector.grantedCount }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Denied</b>
+                <span class="sf-toolbar-status {{ collector.deniedCount ? 'sf-toolbar-status-red' }}">{{ collector.deniedCount }}</span>
+            </div>
+            <div class="sf-toolbar-info-piece">
+                <b>Default strategy</b>
+                <span>{{ collector.defaultStrategy ?? 'n/a' }}</span>
+            </div>
+        {% endset %}
+
+        {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', { link: profiler_url, status: status_color }) }}
+    {% endif %}
+{% endblock %}
+
+{% block menu %}
+    <span class="label {{ collector.decisionCount ? '' : 'disabled' }}">
+        <span class="icon" aria-hidden="true">{{ source('@AccessControl/Icon/access-control.svg') }}</span>
+
+        <strong>Access Control</strong>
+        {% if collector.decisionCount %}
+            <span class="count">
+                <span>{{ collector.decisionCount }}</span>
+            </span>
+        {% endif %}
+    </span>
+{% endblock %}
+
+{% block panel %}
+    <h2>Access Control</h2>
+
+    <div class="metrics">
+        <div class="metric">
+            <span class="value">{{ collector.queries|length }}</span>
+            <span class="label">Questions</span>
+        </div>
+        <div class="metric">
+            <span class="value">{{ collector.decisionCount }}</span>
+            <span class="label">Decisions</span>
+        </div>
+        <div class="metric">
+            <span class="value">{{ collector.grantedCount }}</span>
+            <span class="label">Granted</span>
+        </div>
+        <div class="metric">
+            <span class="value">{{ collector.deniedCount }}</span>
+            <span class="label">Denied</span>
+        </div>
+    </div>
+
+    <div class="sf-tabs">
+        <div class="tab">
+            <h3 class="tab-title">Decisions<span class="badge">{{ collector.decisionCount }}</span></h3>
+
+            <div class="tab-content">
+
+                    {% if collector.queries|length == 0 %}
+                        <div class="empty">
+                            <p>No access control question was asked during this request.</p>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-small">
+                            Under each question, first what was required and then what was decided. The first rows
+                            are the policy tree, where a composite says which operator combined its branches: the
+                            same two policies read "both of them" under <code>All</code> and "either of them" under
+                            <code>AtLeastOneOf</code>, for opposite verdicts. A branch that never ran leaves no
+                            decision below, and a <code>When</code> that stepped aside says so there.
+                            The rows that follow are one per decision. A firewall rule naming several roles asks one
+                            question per role, so a single question often takes several decisions, and an indented
+                            one was decided by a voter asking further, an expression calling <code>is_granted()</code>
+                            being the usual case.
+                        </p>
+
+                        <table class="decision-log">
+                            <col style="width: 40px">
+                            <col style="width: 110px">
+                            <col style="width: 30%">
+                            <col style="width: 40%">
+                            <col style="width: 130px">
+
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Result</th>
+                                    <th>Attribute</th>
+                                    <th>Subject</th>
+                                    <th>Strategy</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for query in collector.queries %}
+                                    <tr class="query-header">
+                                        <td colspan="2">
+                                            {% if query.decision == 'ACCESS_GRANTED' %}
+                                                <span class="label status-success same-width">GRANTED</span>
+                                            {% elseif query.decision == 'ACCESS_DENIED' %}
+                                                <span class="label status-error same-width">DENIED</span>
+                                            {% else %}
+                                                <span class="label same-width">ASKED</span>
+                                            {% endif %}
+                                        </td>
+                                        <td colspan="3" class="origin">
+                                            {%- if query.caller and query.caller.line -%}
+                                                {% set link = query.caller.file|file_link(query.caller.line) %}
+                                                {% if link %}
+                                                    <a href="{{ link }}" title="{{ query.caller.file }}">{{ query.origin }}</a>
+                                                {% else %}
+                                                    <abbr title="{{ query.caller.file }}">{{ query.origin }}</abbr>
+                                                {% endif %}
+                                                <span class="text-muted">line {{ query.caller.line }}</span>
+                                            {%- elseif query.origin -%}
+                                                {{ query.origin }}
+                                            {%- else -%}
+                                                <em class="text-muted">asked programmatically</em>
+                                            {%- endif -%}
+                                        </td>
+                                    </tr>
+
+                                    {% for policy in query.policies %}
+                                        <tr class="policy-row">
+                                            <td></td>
+                                            <td class="font-normal">
+                                                {% if policy.decision == 'ACCESS_GRANTED' %}
+                                                    <span class="label status-success same-width">GRANTED</span>
+                                                {% elseif policy.decision == 'ACCESS_DENIED' %}
+                                                    <span class="label status-error same-width">DENIED</span>
+                                                {% else %}
+                                                    <span class="label status-warning same-width">ABSTAIN</span>
+                                                {% endif %}
+                                            </td>
+                                            <td colspan="3">
+                                                {% if policy.depth %}<span class="nested" style="padding-left: {{ (policy.depth - 1) * 14 }}px">&#9492;&#9472;</span>{% endif %}
+                                                {{ profiler_dump(policy.seek('policy')) }}
+                                                {%- set attribute = policy.attribute -%}
+                                                {%- if attribute is not null and attribute is not iterable %} <code>{{ attribute }}</code>{% endif -%}
+                                                {%- if policy.reason %} <span class="text-muted policy-reason">{{ policy.reason }}</span>{% endif -%}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+
+                                    {% for decision in query.decisions %}
+                                        {% set row_id = 'access-control-' ~ loop.parent.loop.index ~ '-' ~ loop.index %}
+                                        <tr class="decision-result">
+                                            <td class="font-normal text-small text-muted nowrap">{{ loop.index }}</td>
+                                            <td class="font-normal">
+                                                {% if decision.decision == 'ACCESS_GRANTED' %}
+                                                    <span class="label status-success same-width">GRANTED</span>
+                                                {% elseif decision.decision == 'ACCESS_DENIED' %}
+                                                    <span class="label status-error same-width">DENIED</span>
+                                                {% else %}
+                                                    <span class="label status-warning same-width">ABSTAIN</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if decision.depth %}<span class="nested" style="padding-left: {{ (decision.depth - 1) * 14 }}px">&#9492;&#9472;</span>{% endif %}
+                                                {% set attribute = decision.attribute %}
+                                                {% if attribute is not null and attribute is not iterable %}
+                                                    <code>{{ attribute }}</code>
+                                                {% else %}
+                                                    {{ profiler_dump(decision.seek('attribute')) }}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ profiler_dump(decision.seek('subject')) }}</td>
+                                            <td class="font-normal text-small">{{ decision.strategy ?? 'n/a' }}</td>
+                                        </tr>
+                                        <tr class="decision-details">
+                                            <td></td>
+                                            <td colspan="4">
+                                                <div id="{{ row_id }}" class="sf-toggle-content sf-toggle-hidden">
+                                                    <table>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td class="text-muted text-small nowrap">Requester</td>
+                                                                <td colspan="2">{{ profiler_dump(decision.seek('requester')) }}</td>
+                                                            </tr>
+                                                            {% if decision.environment|length %}
+                                                                <tr>
+                                                                    <td class="text-muted text-small nowrap">Environment</td>
+                                                                    <td colspan="2">{{ profiler_dump(decision.seek('environment')) }}</td>
+                                                                </tr>
+                                                            {% endif %}
+                                                            {% if decision.reason %}
+                                                                <tr>
+                                                                    <td class="text-muted text-small nowrap">Reason</td>
+                                                                    <td colspan="2" class="font-normal text-small">{{ decision.reason }}</td>
+                                                                </tr>
+                                                            {% endif %}
+                                                            {% for vote in decision.votes %}
+                                                                <tr>
+                                                                    <td class="text-muted text-small nowrap">{{ loop.first ? 'Votes' : '' }}</td>
+                                                                    <td class="font-normal">
+                                                                        {% if vote.voter is null %}
+                                                                            <em class="text-muted">unknown voter</em>
+                                                                        {% else %}
+                                                                            {{ profiler_dump(vote.seek('voter')) }}
+                                                                            {% if vote.seek('bridged') is not null %}
+                                                                                <span class="text-muted">&rarr;</span> {{ profiler_dump(vote.seek('bridged')) }}
+                                                                            {% endif %}
+                                                                        {% endif %}
+                                                                    </td>
+                                                                    <td class="font-normal text-small">
+                                                                        {{ vote.decision|replace({'ACCESS_': ''}) }}
+                                                                        {% if vote.weight != 1 %} (weight {{ vote.weight }}){% endif %}
+                                                                        {% if vote.reason %}<br>{{ vote.reason }}{% endif %}
+                                                                    </td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <a class="btn btn-link text-small sf-toggle" data-toggle-selector="#{{ row_id }}" data-toggle-alt-content="Hide details">Show details</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+            </div>
+        </div>
+
+        <div class="tab">
+            <h3 class="tab-title">Configuration</h3>
+
+            <div class="tab-content">
+                <p class="help">
+                    How this application is set up, which is the same for every request. What was asked
+                    during this one is under Decisions.
+                </p>
+
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="value">{{ collector.defaultStrategy ?? 'n/a' }}</span>
+                        <span class="label">
+                            Default strategy
+                            {%- if collector.defaultStrategyAlias %}<br><span class="text-muted">{{ collector.defaultStrategyAlias }} in security.yaml</span>{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <h4>Integration</h4>
+
+                    <p class="help">
+                        Which stack answers each kind of question in this application, as settled when the container
+                        was built. Two applications carrying the same bundles can differ here.
+                    </p>
+
+                    <table class="integration">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Answered by</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for row in [
+                                { label: 'Access decisions', key: 'decisions' },
+                                { label: 'URL rules', key: 'rules' },
+                                { label: '#[IsGranted]', key: 'is_granted' },
+                                { label: 'is_granted() in templates', key: 'twig' },
+                                { label: 'Role hierarchy', key: 'role_hierarchy' },
+                            ] %}
+                                {% set who = collector.integration[row.key]|default('none')|trim('"') %}
+                                <tr>
+                                    <th scope="row" class="font-normal">{{ row.label }}</th>
+                                    <td class="font-normal">
+                                        {% if who == 'component' %}
+                                            AccessControl
+                                        {% elseif who == 'security' %}
+                                            Security
+                                        {% elseif who == 'application' %}
+                                            a decision manager of the application
+                                        {% else %}
+                                            <em class="text-muted">nobody</em>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <th scope="row" class="font-normal">Voters written against Security</th>
+                                <td class="font-normal">{{ collector.integration.bridged_voters|default(0) }} bridged</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                <h4>Voters</h4>
+
+                    {% if collector.voters|length == 0 %}
+                        <div class="empty">
+                            <p>No voter is registered.</p>
+                        </div>
+                    {% else %}
+                        <table class="voters">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Voter class</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for voter in collector.voters %}
+                                    <tr>
+                                        <td class="font-normal text-small text-muted nowrap">{{ loop.index }}</td>
+                                        <td class="font-normal">
+                                            {{ profiler_dump(voter.seek('voter')) }}
+                                            {% if voter.seek('bridged') is not null %}
+                                                <span class="text-muted">&rarr;</span> {{ profiler_dump(voter.seek('bridged')) }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,2 @@
+{%- set decision = access_decision('ROLE_ADMIN') -%}
+{{ decision.isGranted ? 'granted' : 'denied' }}|{{ decision.strategy ?: 'NO_STRATEGY' }}|{{ decision.votes|length }}

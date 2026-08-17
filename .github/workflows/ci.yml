@@ -1,0 +1,26 @@
+name: 📁 PHP CI
+
+on:
+  push:
+    branches: ['*.x']
+    tags: ['*']
+  pull_request: ~
+  workflow_dispatch: ~
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: spomky-labs/phpqa/.github/workflows/reusable-ci.yml@main
+    with:
+      project_type: 'library'
+      php_versions: '["8.4"]'
+      experimental_php_versions: '["8.5"]'
+      default_php_version: '8.4'
+      enable_lowest_deps: true
+      enable_infection: true
+      enable_deptrac: true
+      enable_license_check: true
+      enable_js_tests: false

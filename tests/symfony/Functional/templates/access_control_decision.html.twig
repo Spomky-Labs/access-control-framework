@@ -1,0 +1,2 @@
+{%- set decision = access_control_decision('ROLE_SUPER_ADMIN') -%}
+{{ decision.isGranted ? 'granted' : 'denied' }}|{{ decision.decision.value }}|{{ decision.votes|length > 0 ? 'voted' : 'silent' }}

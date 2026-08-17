@@ -1,0 +1,34 @@
+parameters:
+  paths:
+    - './../src'
+  layers:
+    - name: 'Library'
+      collectors:
+        - type: bool
+          must:
+            - { type: classLike, value: '^AccessControl\\' }
+          must_not:
+            - { type: classLike, value: '^AccessControl\\Bundle\\' }
+    - name: 'Bundle'
+      collectors:
+        - { type: classLike, value: '^AccessControl\\Bundle\\' }
+    - name: 'Security'
+      collectors:
+        - { type: classLike, value: '^Symfony\\Component\\Security\\' }
+        - { type: classLike, value: '^Symfony\\Bundle\\SecurityBundle\\' }
+    - name: 'Vendors'
+      collectors:
+        - { type: classLike, value: '^Symfony\\' }
+        - { type: classLike, value: '^Psr\\' }
+        - { type: classLike, value: '^Twig\\' }
+        - { type: classLike, value: '^Composer\\' }
+  ruleset:
+    Library:
+      - 'Vendors'
+      - 'Security'
+    Bundle:
+      - 'Library'
+      - 'Vendors'
+      - 'Security'
+    Security: ~
+    Vendors: ~

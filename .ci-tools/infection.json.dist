@@ -1,0 +1,18 @@
+{
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "timeout": 3,
+    "logs": {
+        "text": "infection.txt"
+    },
+    "mutators": {
+        "@default": true,
+        "global-ignoreSourceCodeByRegex": [
+            "\\$this->logger.*",
+            "parent::build\\(\\$container\\);"
+        ]
+    }
+}

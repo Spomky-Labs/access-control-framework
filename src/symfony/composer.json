@@ -1,0 +1,53 @@
+{
+    "name": "spomky-labs/access-control-bundle",
+    "description": "Integration of the Access Control library into the Symfony full-stack framework.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": [
+        "access control",
+        "authorization",
+        "voter",
+        "permission",
+        "rbac",
+        "abac",
+        "xacml",
+        "symfony",
+        "symfony-bundle",
+        "bundle"
+    ],
+    "homepage": "https://github.com/spomky-labs",
+    "authors": [
+        {
+            "name": "Florent Morselli",
+            "homepage": "https://github.com/Spomky"
+        },
+        {
+            "name": "All contributors",
+            "homepage": "https://github.com/spomky-labs/access-control-bundle/contributors"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "AccessControl\\Bundle\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=8.4",
+        "composer-runtime-api": ">=2.1",
+        "spomky-labs/access-control-lib": "self.version",
+        "symfony/config": "^8.0",
+        "symfony/dependency-injection": "^8.0",
+        "symfony/http-kernel": "^8.0"
+    },
+    "suggest": {
+        "symfony/expression-language": "Required to use the expression voter and expression-based policies",
+        "symfony/security-bundle": "Required to reroute the authorization features of SecurityBundle to this bundle",
+        "symfony/security-core": "Required to declare workflow guards, FrameworkExtension refusing them without it even though this bundle replaces the guard listener",
+        "symfony/twig-bundle": "Required to use the is_granted() and access_decision() template functions",
+        "symfony/web-profiler-bundle": "Required to inspect the decisions in the profiler",
+        "symfony/workflow": "Required to guard workflow transitions"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

@@ -30,9 +30,9 @@
         "php": ">=8.4",
         "composer-runtime-api": ">=2.1",
         "spomky-labs/access-control-lib": "self.version",
-        "symfony/config": "^8.0",
-        "symfony/dependency-injection": "^8.0",
-        "symfony/http-kernel": "^8.0"
+        "symfony/config": "^8.1",
+        "symfony/dependency-injection": "^8.1",
+        "symfony/http-kernel": "^8.1"
     },
     "suggest": {
         "symfony/expression-language": "Required to use the expression voter and expression-based policies",

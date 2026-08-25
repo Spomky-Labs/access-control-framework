@@ -34,8 +34,6 @@ use function is_string;
  * the one thing an access control component cannot do.
  *
  * Registered only where Security's own listener is not, so a question is never asked twice.
- *
- * @experimental
  */
 final readonly class IsGrantedListener implements EventSubscriberInterface
 {

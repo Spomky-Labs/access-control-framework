@@ -9,9 +9,6 @@ use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
-/**
- * @experimental
- */
 final class VoteEvent extends Event
 {
     public function __construct(

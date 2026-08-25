@@ -29,8 +29,6 @@ use Symfony\Component\Workflow\TransitionBlocker;
  * the manager would offer the guard to every other voter and combine the answers with the configured
  * strategy, so a permissive application voter could grant a transition whose expression is false.
  * A guard blocks unless its own expression holds, which is what Workflow means by the word.
- *
- * @experimental
  */
 final readonly class GuardListener
 {

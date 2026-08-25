@@ -13,8 +13,6 @@ use Symfony\Component\HttpFoundation\RequestMatcherInterface;
  * The matcher says which requests the rule covers, the access policy says what they require. Those
  * are two different questions and keeping them apart is what lets a matcher stay a matcher: the
  * voters run on the requests a rule already selected, not on every request that goes by.
- *
- * @experimental
  */
 final readonly class AccessRule
 {

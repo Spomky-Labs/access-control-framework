@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Attribute;
 
-/**
- * @experimental
- */
 interface CompositeAccessPolicyInterface extends AccessPolicyInterface
 {
     /**

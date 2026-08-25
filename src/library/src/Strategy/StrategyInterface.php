@@ -8,9 +8,6 @@ use AccessControl\AccessDecision;
 use AccessControl\AccessRequest;
 use AccessControl\CastVote;
 
-/**
- * @experimental
- */
 interface StrategyInterface
 {
     public function getName(): string;

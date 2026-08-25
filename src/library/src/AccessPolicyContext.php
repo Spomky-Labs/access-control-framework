@@ -10,9 +10,6 @@ use function array_key_exists;
 use function is_array;
 use function sprintf;
 
-/**
- * @experimental
- */
 final readonly class AccessPolicyContext
 {
     /**

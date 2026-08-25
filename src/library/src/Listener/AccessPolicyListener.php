@@ -22,8 +22,6 @@ use function is_string;
  * Denials are reported with the component's own exception: Security's exception listener catches
  * the marker interface, so a firewall still answers 403 or redirects to the login page, and an
  * application without one gets the 403 the exception carries.
- *
- * @experimental
  */
 final readonly class AccessPolicyListener implements EventSubscriberInterface
 {

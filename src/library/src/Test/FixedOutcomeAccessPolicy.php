@@ -13,8 +13,6 @@ use AccessControl\Attribute\AccessPolicyInterface;
  *
  * Testing a composite handler otherwise means assembling the whole stack underneath it just to make
  * a child grant or refuse, and the assembly is then what the test is really about.
- *
- * @experimental
  */
 final readonly class FixedOutcomeAccessPolicy implements AccessPolicyInterface
 {

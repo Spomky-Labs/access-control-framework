@@ -22,8 +22,6 @@ use function sprintf;
  * The validator is held rather than read from the evaluation variables, which is what lets the
  * expression voter be reused untouched: its variables are the ones an access rule sees, and this
  * function needs none of them.
- *
- * @experimental
  */
 final readonly class ExpressionLanguageProvider implements ExpressionFunctionProviderInterface
 {

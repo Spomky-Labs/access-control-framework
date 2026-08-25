@@ -9,9 +9,6 @@ use AccessControl\AccessPolicyContext;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
 
-/**
- * @experimental
- */
 interface AccessPolicyHandlerInterface
 {
     public function supports(AccessPolicyInterface $accessPolicy): bool;

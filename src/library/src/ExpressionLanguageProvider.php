@@ -11,8 +11,6 @@ use function sprintf;
 /**
  * Every function goes through the access checker, so that an expression and a voter answer the same
  * question the same way, even when the shipped voters have been replaced.
- *
- * @experimental
  */
 class ExpressionLanguageProvider implements ExpressionFunctionProviderInterface
 {

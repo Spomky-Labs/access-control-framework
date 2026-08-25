@@ -21,8 +21,6 @@ use function func_get_args;
  *     {
  *         use AccessControlTrait;
  *     }
- *
- * @experimental
  */
 trait AccessControlTrait
 {

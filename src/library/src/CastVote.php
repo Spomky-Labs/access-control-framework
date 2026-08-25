@@ -15,8 +15,6 @@ namespace AccessControl;
  * This is what lets a decision be read after the fact and still say who refused, which the reason
  * alone cannot: two voters may refuse for the same reason, and a template or a test wanting to name
  * the culprit had no way to.
- *
- * @experimental
  */
 final readonly class CastVote
 {

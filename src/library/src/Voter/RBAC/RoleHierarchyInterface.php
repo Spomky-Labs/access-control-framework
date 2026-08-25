@@ -16,8 +16,6 @@ namespace AccessControl\Voter\RBAC;
  * documented method Symfony would read as forthcoming. Such an announcement is an obligation on
  * every implementation, which DebugClassLoader enforces and which was measured on this component's
  * own adapter. No voter asks the question, so no implementation is put on notice for it.
- *
- * @experimental
  */
 interface RoleHierarchyInterface
 {

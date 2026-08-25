@@ -8,8 +8,6 @@ use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Tells which access rule covers a request, if any.
- *
- * @experimental
  */
 interface AccessRuleMapInterface
 {

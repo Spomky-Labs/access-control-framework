@@ -19,8 +19,6 @@ use Symfony\Component\HttpKernel\KernelEvents;
  * The channel travels with the rule because it is what a rule requires of the request, next to what
  * it requires of the requester. Enforcing it is not an access decision though, so no voter is
  * consulted and nothing reaches the decision log.
- *
- * @experimental
  */
 final readonly class ChannelListener implements EventSubscriberInterface
 {

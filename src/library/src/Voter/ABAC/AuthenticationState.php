@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Voter\ABAC;
 
-/**
- * @experimental
- */
 enum AuthenticationState: string
 {
     case IS_AUTHENTICATED_FULLY = 'IS_AUTHENTICATED_FULLY';

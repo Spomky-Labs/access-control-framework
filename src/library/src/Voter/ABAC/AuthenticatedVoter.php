@@ -15,9 +15,6 @@ use Symfony\Component\Security\Core\Exception\InvalidArgumentException;
 use function in_array;
 use function is_string;
 
-/**
- * @experimental
- */
 final readonly class AuthenticatedVoter implements VoterInterface
 {
     /**

@@ -26,8 +26,6 @@ use function sprintf;
  * Field level access control is the one thing not carried across. It goes through symfony/acl,
  * whose FieldVote no voter of this component understands, so a field is refused loudly rather than
  * quietly denied.
- *
- * @experimental
  */
 final class AccessControlExtension extends AbstractExtension
 {

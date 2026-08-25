@@ -17,8 +17,6 @@ use AccessControl\DecisionVote;
  *  - Otherwise, (i.e. at least one voter denies access) the final decision is denied.
  *
  * This is the "affirmative" strategy of the Security component.
- *
- * @experimental
  */
 final readonly class PermitOverridesStrategy implements StrategyInterface
 {

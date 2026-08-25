@@ -12,9 +12,6 @@ use AccessControl\Attribute\AtLeastOneOf;
 use AccessControl\DecisionVote;
 use function assert;
 
-/**
- * @experimental
- */
 final readonly class AtLeastOneOfHandler implements AccessPolicyHandlerInterface
 {
     public function supports(AccessPolicyInterface $accessPolicy): bool

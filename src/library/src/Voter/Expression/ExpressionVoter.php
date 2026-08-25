@@ -22,9 +22,6 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use function is_object;
 use function sprintf;
 
-/**
- * @experimental
- */
 final readonly class ExpressionVoter implements VoterInterface
 {
     public function __construct(

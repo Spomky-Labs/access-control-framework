@@ -8,9 +8,6 @@ use AccessControl\AccessDecision;
 use AccessControl\AccessRequest;
 use Symfony\Contracts\EventDispatcher\Event;
 
-/**
- * @experimental
- */
 final class AccessDecisionEvent extends Event
 {
     /**

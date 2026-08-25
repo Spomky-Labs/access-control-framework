@@ -6,8 +6,6 @@ namespace AccessControl\Attribute;
 
 /**
  * References a value that is only known at runtime, by name.
- *
- * @experimental
  */
 final readonly class Argument
 {

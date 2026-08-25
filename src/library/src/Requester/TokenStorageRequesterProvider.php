@@ -6,9 +6,6 @@ namespace AccessControl\Requester;
 
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
-/**
- * @experimental
- */
 final readonly class TokenStorageRequesterProvider implements RequesterProviderInterface
 {
     public function __construct(

@@ -23,8 +23,6 @@ use function sprintf;
  * PHP forbids a closure in the arguments of an attribute, so this never comes from #[AccessPolicy]
  * written in source. It serves the programmatic path, which is the same limitation Security's
  * ClosureVoter lives with.
- *
- * @experimental
  */
 final readonly class ClosureVoter implements VoterInterface
 {

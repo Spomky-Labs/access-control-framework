@@ -6,9 +6,6 @@ namespace AccessControl\Exception;
 
 use RuntimeException;
 
-/**
- * @experimental
- */
 final class InvalidStrategyException extends RuntimeException
 {
 }

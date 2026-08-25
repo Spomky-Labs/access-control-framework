@@ -15,8 +15,6 @@ use AccessControl\Requester\RequesterProviderInterface;
  * that raised it rather than to an ambient state. That binding is the whole point: a checker that
  * resolved the requester itself would be a poorer AccessControlManager, and there is no need
  * for two of those.
- *
- * @experimental
  */
 final readonly class RequesterBoundChecker
 {

@@ -18,8 +18,6 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
  *
  * The response carries no diagnostic on purpose, and this is what fills that gap where it is safe
  * to: in the test, not in the answer sent to the requester.
- *
- * @experimental
  */
 final class AccessDecisionLoggerListener implements EventSubscriberInterface, ResetInterface
 {

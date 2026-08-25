@@ -10,8 +10,6 @@ namespace AccessControl\Voter\RBAC;
  * Behaves exactly as Security's RoleHierarchy, cycles included, so that an application moving over
  * keeps the very same reachable roles. The duplication is deliberate and temporary: the component
  * cannot depend on a service of SecurityBundle for a notion that is leaving Security.
- *
- * @experimental
  */
 class RoleHierarchy implements RoleHierarchyInterface
 {

@@ -15,8 +15,6 @@ namespace AccessControl\Requester;
  * A contract on the requester rather than a wrapper around it, deliberately. Wrapping would hide
  * the requester from every voter that reads its type, which is the very reason an offline token
  * cannot be reproduced here.
- *
- * @experimental
  */
 interface DelegatedRequesterInterface
 {

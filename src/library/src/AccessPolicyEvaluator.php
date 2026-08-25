@@ -13,9 +13,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use function is_array;
 use function sprintf;
 
-/**
- * @experimental
- */
 final class AccessPolicyEvaluator
 {
     /**

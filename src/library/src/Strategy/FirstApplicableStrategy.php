@@ -19,8 +19,6 @@ use AccessControl\DecisionVote;
  * order independent. Registering a voter before the others is what lets it overrule them.
  *
  * This is the "priority" strategy of the Security component.
- *
- * @experimental
  */
 final readonly class FirstApplicableStrategy implements StrategyInterface
 {

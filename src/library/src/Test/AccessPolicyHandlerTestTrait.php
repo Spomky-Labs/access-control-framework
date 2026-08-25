@@ -23,8 +23,6 @@ use function assert;
  *
  * A trait rather than a parent class, so the single inheritance slot of a test class stays free,
  * as for AccessDecisionStrategyTestTrait.
- *
- * @experimental
  */
 trait AccessPolicyHandlerTestTrait
 {

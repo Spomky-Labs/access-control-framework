@@ -31,8 +31,6 @@ use function sprintf;
  *
  * The cost of declaring them is that a function Security adds later would be left out, so the list
  * is checked against the extension's own and a stranger raises at build time.
- *
- * @experimental
  */
 final class SecurityExtensionWithoutAuthorization extends AbstractExtension
 {

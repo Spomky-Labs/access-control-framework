@@ -6,9 +6,6 @@ namespace AccessControl\Exception;
 
 use LogicException;
 
-/**
- * @experimental
- */
 final class UnsupportedAccessPolicyException extends LogicException
 {
 }

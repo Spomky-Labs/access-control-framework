@@ -19,9 +19,6 @@ your templates, and your `security.yaml` stays byte for byte what it was. What c
 
 Both are read-only subtree splits of this repository. Issues and pull requests belong here.
 
-The whole API is marked `@experimental`. It may change in a minor release, and it will keep doing so until the migration
-paths out of Symfony Security are complete.
-
 # Documentation
 
 The documentation can be read on the following website: https://acf.spomky-labs.com/

@@ -14,9 +14,6 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use function assert;
 use function sprintf;
 
-/**
- * @experimental
- */
 final readonly class WhenHandler implements AccessPolicyHandlerInterface
 {
     public function __construct(

@@ -10,8 +10,6 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 /**
  * There is no enabled flag: registering the bundle is what turns the component on.
- *
- * @experimental
  */
 class Configuration implements ConfigurationInterface
 {

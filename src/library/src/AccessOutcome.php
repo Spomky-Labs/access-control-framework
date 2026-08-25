@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl;
 
-/**
- * @experimental
- */
 final readonly class AccessOutcome
 {
     public function __construct(

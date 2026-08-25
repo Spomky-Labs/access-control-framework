@@ -18,8 +18,6 @@ use AccessControl\VoterInterface;
  *
  * The policies are kept for a different reason again: a composite is what makes a verdict, and the
  * decisions under it never say which operator combined them.
- *
- * @experimental
  */
 final class AccessDecisionEvents
 {

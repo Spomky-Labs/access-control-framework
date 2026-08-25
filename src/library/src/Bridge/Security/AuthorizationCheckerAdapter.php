@@ -31,8 +31,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * The arrow points the right way round. Security's classes are used here, AccessControl is never
  * used by Security, which is what reconciles the independence of the component with a smooth
  * migration.
- *
- * @experimental
  */
 final readonly class AuthorizationCheckerAdapter implements AuthorizationCheckerInterface, UserAuthorizationCheckerInterface
 {

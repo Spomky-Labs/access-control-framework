@@ -17,8 +17,6 @@ use Symfony\Component\Security\Core\Role\RoleHierarchyInterface as SecurityRoleH
  * The adapter goes this way round and not the other: putting the component's implementation behind
  * security.role_hierarchy would break every application typed against Security's interface, which
  * the component does not implement and must not, the notion of role being on its way out of there.
- *
- * @experimental
  */
 final readonly class RoleHierarchyAdapter implements RoleHierarchyInterface
 {

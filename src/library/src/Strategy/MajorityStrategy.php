@@ -22,8 +22,6 @@ use AccessControl\DecisionVote;
  *
  * This is the "consensus" strategy of the Security component, which counts votes rather than
  * weighing them. XACML defines no such combining algorithm.
- *
- * @experimental
  */
 final readonly class MajorityStrategy implements StrategyInterface
 {

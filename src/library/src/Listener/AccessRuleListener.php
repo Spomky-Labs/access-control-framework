@@ -23,8 +23,6 @@ use Symfony\Component\HttpKernel\KernelEvents;
  * without Security. Denials are reported with the component's own exception, so a firewall still
  * answers 403 or redirects to the login page, and an application without one gets the 403 the
  * exception carries.
- *
- * @experimental
  */
 final readonly class AccessRuleListener implements EventSubscriberInterface
 {

@@ -41,9 +41,6 @@ use const FILTER_FLAG_IPV6;
 use const FILTER_VALIDATE_IP;
 use const PREG_SPLIT_NO_EMPTY;
 
-/**
- * @experimental
- */
 class AccessControlExtension extends Extension
 {
     /**

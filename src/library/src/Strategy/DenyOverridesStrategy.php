@@ -20,8 +20,6 @@ use AccessControl\DecisionVote;
  *
  * This is the "unanimous" strategy of the Security component: denying as soon as one voter denies
  * and granting otherwise amounts to the unanimity of the voters that did not abstain.
- *
- * @experimental
  */
 final readonly class DenyOverridesStrategy implements StrategyInterface
 {

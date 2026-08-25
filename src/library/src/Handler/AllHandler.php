@@ -12,9 +12,6 @@ use AccessControl\Attribute\All;
 use AccessControl\DecisionVote;
 use function assert;
 
-/**
- * @experimental
- */
 final readonly class AllHandler implements AccessPolicyHandlerInterface
 {
     public function supports(AccessPolicyInterface $accessPolicy): bool

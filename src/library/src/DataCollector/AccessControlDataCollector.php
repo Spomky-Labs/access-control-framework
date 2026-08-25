@@ -28,8 +28,6 @@ use Throwable;
  * a join that belongs here rather than in the decision, which no application should have to carry a
  * profiler field for.
  *
- * @experimental
- *
  * @final
  */
 class AccessControlDataCollector extends DataCollector implements LateDataCollectorInterface

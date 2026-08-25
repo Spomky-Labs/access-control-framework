@@ -22,8 +22,6 @@ use function sprintf;
  *
  * Whether all voters abstaining ends in a grant is settled inside the adapted strategy, which is
  * where Security settles it, so the manager never sees an abstention from here.
- *
- * @experimental
  */
 final readonly class StrategyAdapter implements StrategyInterface
 {

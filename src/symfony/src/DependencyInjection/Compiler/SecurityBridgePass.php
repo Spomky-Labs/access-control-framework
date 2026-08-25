@@ -36,8 +36,6 @@ use function sprintf;
  * design so that the component works without Security at all. This is where it is filled in.
  *
  * A compiler pass rather than the extension, as the definitions belong to another bundle.
- *
- * @experimental
  */
 class SecurityBridgePass implements CompilerPassInterface
 {

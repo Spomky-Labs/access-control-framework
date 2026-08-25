@@ -16,9 +16,6 @@ if (! class_exists(BaseExpressionLanguage::class)) {
 // Help opcache.preload discover always-needed symbols
 class_exists(ExpressionLanguageProvider::class);
 
-/**
- * @experimental
- */
 class ExpressionLanguage extends BaseExpressionLanguage
 {
     /**

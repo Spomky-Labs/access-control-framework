@@ -20,8 +20,6 @@ use Symfony\Component\Workflow\EventListener\GuardListener as SecurityGuardListe
  * It deliberately does nothing when Security is there. The guards of such an application already
  * reach this component, security.access.decision_manager being an alias to ours, so swapping the
  * listener would gain nothing and would cost the trust resolver an expression may name.
- *
- * @experimental
  */
 final class WorkflowGuardPass implements CompilerPassInterface
 {

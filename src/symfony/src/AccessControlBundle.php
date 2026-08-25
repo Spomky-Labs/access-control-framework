@@ -13,8 +13,6 @@ use Symfony\Component\Workflow\Event\GuardEvent;
 
 /**
  * Registering this bundle is the opt-in: from there on the AccessControl component decides.
- *
- * @experimental
  */
 class AccessControlBundle extends Bundle
 {

@@ -20,8 +20,6 @@ use Symfony\Contracts\EventDispatcher\Event;
  *
  * The parent is the same idea as the one AccessDecisionEvent carries for a nested question, applied
  * to the shape of the policy rather than to the shape of the questions it asks.
- *
- * @experimental
  */
 final class AccessPolicyEvent extends Event
 {

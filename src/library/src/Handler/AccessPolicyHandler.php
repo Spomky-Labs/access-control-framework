@@ -14,9 +14,6 @@ use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\AccessPolicyInterface;
 use function assert;
 
-/**
- * @experimental
- */
 final readonly class AccessPolicyHandler implements AccessPolicyHandlerInterface
 {
     public function __construct(

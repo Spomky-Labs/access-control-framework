@@ -16,8 +16,6 @@ use Symfony\Component\Security\Core\Authentication\Token\SwitchUserToken;
  *
  * The reference to Security is soft, as everywhere else here: the instanceof answers false rather
  * than raising when security-core is absent, so the component stands alone without a guard.
- *
- * @experimental
  */
 final class Actor
 {

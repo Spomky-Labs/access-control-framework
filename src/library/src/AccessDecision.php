@@ -6,9 +6,6 @@ namespace AccessControl;
 
 use function is_array;
 
-/**
- * @experimental
- */
 readonly class AccessDecision
 {
     /**

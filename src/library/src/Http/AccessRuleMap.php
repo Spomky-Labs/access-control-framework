@@ -8,8 +8,6 @@ use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Access rules in declaration order, the first match winning.
- *
- * @experimental
  */
 class AccessRuleMap implements AccessRuleMapInterface
 {

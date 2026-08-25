@@ -13,8 +13,6 @@ use Symfony\Contracts\EventDispatcher\Event;
  * A composite policy asks a question per branch, and a firewall rule naming several roles asks one
  * per role, so a flat log of decisions cannot say which of them were the same question. This closes
  * a question, and everything recorded since the previous one belongs to it.
- *
- * @experimental
  */
 final class AccessQueryEvent extends Event
 {

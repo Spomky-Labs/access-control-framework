@@ -36,8 +36,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * listener on ConsoleEvents::ERROR calling setExitCode(), which writes the value onto the exception
  * as well and so has the last word. It can branch on the command or on the requester, which no
  * setting of ours would have allowed.
- *
- * @experimental
  */
 final readonly class ConsoleAccessPolicyListener implements EventSubscriberInterface
 {

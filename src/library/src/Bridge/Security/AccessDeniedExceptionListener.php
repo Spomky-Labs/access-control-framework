@@ -25,8 +25,6 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  * The chain of previous exceptions is walked as the firewall walks it, a template rendering being
  * enough to bury the denial under a wrapper. The outer layers are dropped on translation, which is
  * what the firewall does with them anyway.
- *
- * @experimental
  */
 final class AccessDeniedExceptionListener implements EventSubscriberInterface
 {

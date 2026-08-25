@@ -21,8 +21,6 @@ namespace AccessControl;
  * the word of AuthorizationCheckerInterface::isGranted(), which the Security bridge implements. A
  * rename would move the translation to that very seam instead of removing it. And requester says
  * more plainly than subject ever could who is doing the asking.
- *
- * @experimental
  */
 readonly class AccessRequest
 {

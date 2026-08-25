@@ -22,8 +22,6 @@ use function count;
  * that a voter can obtain by itself belongs to that voter instead, the clock being the obvious
  * case: a rule that abstains on a missing key fails open, and no entry point should be able to
  * disable a rule by omission.
- *
- * @experimental
  */
 final readonly class AccessEnvironment implements IteratorAggregate, Countable
 {

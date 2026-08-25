@@ -9,3 +9,4 @@
 /.ci-tools/.phpunit.cache
 /tmp*
 .*.cache
+/TODO.md

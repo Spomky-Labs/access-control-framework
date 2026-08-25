@@ -16,6 +16,11 @@ parameters:
       collectors:
         - { type: classLike, value: '^Symfony\\Component\\Security\\' }
         - { type: classLike, value: '^Symfony\\Bundle\\SecurityBundle\\' }
+    # Reached by the Test/ namespaces alone, which are shipped so an application can assert on
+    # access decisions. Anything else depending on PHPUnit would be a test helper that escaped.
+    - name: 'PHPUnit'
+      collectors:
+        - { type: classLike, value: '^PHPUnit\\' }
     - name: 'Vendors'
       collectors:
         - { type: classLike, value: '^Symfony\\' }
@@ -26,9 +31,12 @@ parameters:
     Library:
       - 'Vendors'
       - 'Security'
+      - 'PHPUnit'
     Bundle:
       - 'Library'
       - 'Vendors'
       - 'Security'
+      - 'PHPUnit'
     Security: ~
     Vendors: ~
+    PHPUnit: ~

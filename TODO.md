@@ -89,12 +89,17 @@ Une troisième, plus large, ne peut pas être écrite telle quelle : `FrameworkE
 - **`AbstractController` et `ControllerHelper` exigent `AccessControlTrait`**, FrameworkBundle n'étant plus patché. La parité tient toujours : les contrôleurs de test prennent le trait et rien d'autre ne bouge.
 - **`UnusedTagsPass`** ne connaît plus nos trois tags. Purement cosmétique, `debug:container` peut les signaler comme inutilisés.
 
-## Le fond, par ordre décroissant d'importance
+## Le fond
 
-1. **Modéliser la délégation**, à trancher avant que RBAC quitte Security. Options et mesures dans le worklog, section « Délégation : l'arbitrage, mesuré ».
-2. **Environnement typé** en remplacement de l'`AccessEnvironment` à clés libres. C'est aussi la réponse à natewiebe13 sur la désignation explicite de l'acteur.
-3. **Reprendre le reste de `Security\Core\Role\*`** : `getParentRoleNames()`, `SwitchUserRole`, `Role`.
-4. **L'arbre de politiques dans le profileur** : livré et non commité au moment de la clôture, voir la section du worklog du 2026-08-04. Vérifier qu'il a bien suivi le portage.
+Cette liste en comptait quatre. **Trois étaient périmées**, relues et vérifiées dans le code le 2026-08-25 ; il n'en reste qu'une, et c'est un arbitrage.
+
+**Reste à trancher : l'environnement typé**, en remplacement de l'`AccessEnvironment` à clés libres. C'est aussi la réponse à natewiebe13 sur la désignation explicite de l'acteur. Rien d'autre ne dépend de cette décision, donc rien n'est bloqué en attendant.
+
+Les trois autres, avec ce qui a été vérifié plutôt que supposé :
+
+- ~~**Modéliser la délégation**~~ **tranché et appliqué le 2026-08-03**, option A, et le portage l'a conservé intact : `DelegatedRequesterInterface::getActor()`, `Requester\Actor` comme seul endroit qui connaît les deux façons de le dire, les deux voters qui l'appellent sans rejouer la règle, la variable `actor` publiée seulement quand il y en a un, et la branche `IS_IMPERSONATOR` remontée au-dessus du garde de token. Vérifié aussi : **plus une seule référence à `SwitchUserToken` dans le cœur** hors `Requester\Actor`. Ce que la décision ne couvrait pas, la portée de la délégation, reste un ajout de fonctionnalité que Symfony ne modélise nulle part et qui ne bloque rien.
+- ~~**Reprendre le reste de `Security\Core\Role\*`**~~ **fait, et plus court que la note ne le laissait croire.** `getParentRoleNames()` est implémenté sur `RoleHierarchy`, avec ses tests de parité, et délibérément **pas** déclaré sur notre interface : l'annoncer serait une obligation pour toute implémentation, que `DebugClassLoader` fait respecter, alors qu'aucun voter ne pose la question. `Role` et `SwitchUserRole` n'ont rien à reprendre : `@internal`, constructeur privé, aucun comportement, ce sont des coquilles pour relire des sessions Symfony v4.
+- ~~**L'arbre de politiques dans le profileur**~~ **a bien suivi le portage**, vérifié pièce par pièce : `AccessPolicyEvent` avec son parent, l'évaluateur qui dispatche chaque nœud avec sa pile, `getPolicies()`, le collecteur qui reconstruit l'arbre en pré-ordre, le gabarit, et le vide jugé sur les questions et non sur les décisions. Douze tests verts le couvrent, dont « le composite qui a fait le verdict est nommé » et « un composite qui s'écarte le dit ».
 
 ## ~~À documenter, sinon les gens choisiront au hasard~~ fait
 

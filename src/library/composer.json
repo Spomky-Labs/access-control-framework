@@ -1,8 +1,8 @@
 {
     "name": "spomky-labs/access-control-lib",
     "description": "Authorization for PHP: decides whether a requester is allowed to perform an action on a subject.",
-    "type": "library",
     "license": "MIT",
+    "type": "library",
     "keywords": [
         "access control",
         "authorization",
@@ -12,7 +12,6 @@
         "abac",
         "xacml"
     ],
-    "homepage": "https://github.com/spomky-labs",
     "authors": [
         {
             "name": "Florent Morselli",
@@ -23,11 +22,7 @@
             "homepage": "https://github.com/spomky-labs/access-control-lib/contributors"
         }
     ],
-    "autoload": {
-        "psr-4": {
-            "AccessControl\\": "src/"
-        }
-    },
+    "homepage": "https://github.com/spomky-labs",
     "require": {
         "php": ">=8.4",
         "symfony/event-dispatcher-contracts": "^3.0"
@@ -37,6 +32,11 @@
         "symfony/security-core": "Required to reuse the voters, the role hierarchy and the tokens of the Security component",
         "symfony/workflow": "Required to guard workflow transitions",
         "twig/twig": "Required to use the is_granted() and access_decision() template functions"
+    },
+    "autoload": {
+        "psr-4": {
+            "AccessControl\\": "src/"
+        }
     },
     "config": {
         "sort-packages": true

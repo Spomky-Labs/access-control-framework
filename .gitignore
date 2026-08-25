@@ -5,6 +5,7 @@
 /infection.txt
 /report.md
 /.ci-tools/coverage
+/.ci-tools/infection.txt
 /.ci-tools/.phpunit.cache
 /tmp*
 .*.cache

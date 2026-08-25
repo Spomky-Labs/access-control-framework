@@ -1,8 +1,8 @@
 {
     "name": "spomky-labs/access-control-bundle",
     "description": "Integration of the Access Control library into the Symfony full-stack framework.",
-    "type": "symfony-bundle",
     "license": "MIT",
+    "type": "symfony-bundle",
     "keywords": [
         "access control",
         "authorization",
@@ -15,7 +15,6 @@
         "symfony-bundle",
         "bundle"
     ],
-    "homepage": "https://github.com/spomky-labs",
     "authors": [
         {
             "name": "Florent Morselli",
@@ -26,11 +25,7 @@
             "homepage": "https://github.com/spomky-labs/access-control-bundle/contributors"
         }
     ],
-    "autoload": {
-        "psr-4": {
-            "AccessControl\\Bundle\\": "src/"
-        }
-    },
+    "homepage": "https://github.com/spomky-labs",
     "require": {
         "php": ">=8.4",
         "composer-runtime-api": ">=2.1",
@@ -46,6 +41,11 @@
         "symfony/twig-bundle": "Required to use the is_granted() and access_decision() template functions",
         "symfony/web-profiler-bundle": "Required to inspect the decisions in the profiler",
         "symfony/workflow": "Required to guard workflow transitions"
+    },
+    "autoload": {
+        "psr-4": {
+            "AccessControl\\Bundle\\": "src/"
+        }
     },
     "config": {
         "sort-packages": true

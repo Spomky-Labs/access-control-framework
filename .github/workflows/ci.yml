@@ -20,7 +20,9 @@ jobs:
       experimental_php_versions: '["8.5"]'
       default_php_version: '8.4'
       enable_lowest_deps: true
-      enable_infection: true
+      # Off until Infection can run against PHPUnit 13 and the time budget a suite of functional
+      # kernels needs is decided. Both are written down in TODO.md; `castor qa:infect` still works.
+      enable_infection: false
       enable_deptrac: true
       enable_license_check: true
       enable_js_tests: false

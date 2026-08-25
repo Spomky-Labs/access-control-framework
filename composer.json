@@ -1,8 +1,8 @@
 {
     "name": "spomky-labs/access-control-framework",
     "description": "Authorization for PHP and Symfony: decides whether a requester is allowed to perform an action on a subject.",
-    "type": "symfony-bundle",
     "license": "MIT",
+    "type": "symfony-bundle",
     "keywords": [
         "access control",
         "authorization",
@@ -15,7 +15,6 @@
         "symfony-bundle",
         "bundle"
     ],
-    "homepage": "https://github.com/spomky-labs/access-control-framework",
     "authors": [
         {
             "name": "Florent Morselli",
@@ -26,18 +25,7 @@
             "homepage": "https://github.com/spomky-labs/access-control-framework/contributors"
         }
     ],
-    "autoload": {
-        "psr-4": {
-            "AccessControl\\": "src/library/src/",
-            "AccessControl\\Bundle\\": "src/symfony/src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "AccessControl\\Tests\\": "tests/library/",
-            "AccessControl\\Tests\\Bundle\\": "tests/symfony/"
-        }
-    },
+    "homepage": "https://github.com/spomky-labs/access-control-framework",
     "require": {
         "php": ">=8.4",
         "composer-runtime-api": ">=2.1",
@@ -69,11 +57,11 @@
         "symfony/web-profiler-bundle": "^8.0",
         "symfony/workflow": "^8.0",
         "symfony/yaml": "^8.0",
-        "twig/twig": "^3.12|^4.0"
+        "twig/twig": "^3.12 || ^4.0"
     },
     "replace": {
-        "spomky-labs/access-control-lib": "self.version",
-        "spomky-labs/access-control-bundle": "self.version"
+        "spomky-labs/access-control-bundle": "self.version",
+        "spomky-labs/access-control-lib": "self.version"
     },
     "suggest": {
         "spomky-labs/access-control-bundle": "Integration of the library into the Symfony full-stack framework",
@@ -82,12 +70,24 @@
         "symfony/workflow": "Required to guard workflow transitions",
         "twig/twig": "Required to use the is_granted() and access_decision() template functions"
     },
+    "autoload": {
+        "psr-4": {
+            "AccessControl\\": "src/library/src/",
+            "AccessControl\\Bundle\\": "src/symfony/src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AccessControl\\Tests\\": "tests/library/",
+            "AccessControl\\Tests\\Bundle\\": "tests/symfony/"
+        }
+    },
     "config": {
-        "sort-packages": true,
         "allow-plugins": {
             "infection/extension-installer": true,
             "phpstan/extension-installer": true
-        }
+        },
+        "sort-packages": true
     },
     "extra": {
         "thanks": {

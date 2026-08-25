@@ -55,7 +55,7 @@ readonly class AccessDecision
     }
 
     /**
-     * @param iterable<AccessOutcome> $votes
+     * @param iterable<CastVote> $votes
      */
     public static function grant(AccessRequest $accessRequest, iterable $votes, ?string $summary = null): self
     {
@@ -63,7 +63,7 @@ readonly class AccessDecision
     }
 
     /**
-     * @param iterable<AccessOutcome> $votes
+     * @param iterable<CastVote> $votes
      */
     public static function deny(AccessRequest $accessRequest, iterable $votes, ?string $summary = null): self
     {
@@ -71,7 +71,7 @@ readonly class AccessDecision
     }
 
     /**
-     * @param iterable<AccessOutcome> $votes
+     * @param iterable<CastVote> $votes
      */
     public static function abstain(AccessRequest $accessRequest, iterable $votes, ?string $summary = null): self
     {

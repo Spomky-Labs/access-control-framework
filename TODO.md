@@ -75,9 +75,15 @@ Deux correctifs trouvés en développant le composant, sans rapport avec l'acces
 | PR | Contenu | État |
 |---|---|---|
 | amont 1 | `results.html.twig` du WebProfiler ne définit pas `has_dump` | [symfony/symfony#65312](https://github.com/symfony/symfony/pull/65312), **corrigé en amont** |
-| amont 2 | Le profilage console ne survit pas à une commande arrêtée à `ConsoleEvents::COMMAND` : `input` et `output` semés par `FrameworkBundle\Console\Application`, défauts sur `arguments` et `options` de `TraceableCommand` | [symfony/symfony#65637](https://github.com/symfony/symfony/pull/65637), ouverte le 2026-08-25 sur `6.4` |
+| amont 2 | Le profilage console ne survit pas à une commande arrêtée à `ConsoleEvents::COMMAND` : `input`, `output`, `arguments` et `options` initialisés par `FrameworkBundle\Console\Application` | [symfony/symfony#65637](https://github.com/symfony/symfony/pull/65637), ouverte le 2026-08-25 sur `6.4`, CI verte |
 
-Amont 2 vise `6.4` et non `8.2` : le bogue existe depuis l'arrivée du profilage console et `6.4` est toujours la plus basse branche maintenue. Le diff sorti diffère de celui gardé en réserve : le repli dans `CliRequest::getUri()` et le défaut sur `ignoreValidation` se sont révélés inutiles, la propriété étant renseignée par le constructeur, et seuls `arguments` et `options` manquaient vraiment. Il porte un test fonctionnel, `FrameworkBundle\Tests\Functional\ConsoleProfilerTest`, qui échoue sans le correctif et couvre aussi la commande qui tourne normalement.
+Amont 2 vise `6.4` et non `8.2` : le bogue existe depuis l'arrivée du profilage console et `6.4` est toujours la plus basse branche maintenue. Le diff sorti diffère de celui gardé en réserve, sur trois points mesurés :
+
+- le repli dans `CliRequest::getUri()` et le défaut sur `ignoreValidation` sont inutiles, la propriété étant renseignée par le constructeur ;
+- **les défauts ne peuvent pas vivre dans `TraceableCommand`** : le job `low-deps` teste `FrameworkBundle` contre le `symfony/console` de Packagist, donc un correctif écrit dans Console rendrait le bundle dépendant d'un Console non publié. Les quatre propriétés sont initialisées dans `FrameworkBundle\Console\Application`, et Console n'est pas touché ;
+- `CliRequest::getResponse()` redéfinissait `Response::getStatusCode()`, marquée `@final`, ce qui déprécie à chaque commande profilée. Personne ne le voyait faute de test sur ce chemin. Corrigé en écrivant `$statusCode` directement : un code de sortie n'est pas un statut HTTP et ne passe pas la validation de `setStatusCode()`.
+
+Il porte un test fonctionnel, `FrameworkBundle\Tests\Functional\ConsoleProfilerTest`, qui échoue sans le correctif et couvre aussi la commande qui tourne normalement. Le profilage console n'avait aucune couverture avant.
 
 Les diffs d'origine sont sauvés dans `~/.claude/projects/-home-florent-Projects-access-control-framework/upstream-patches/`, la branche Symfony qui les portait ayant été supprimée. Le troisième fichier de ce répertoire, `abandonne-frameworkbundle-integration.patch`, est l'intégration dans FrameworkBundle qui n'a plus lieu d'être : gardé pour mémoire, pas pour être rejoué.
 

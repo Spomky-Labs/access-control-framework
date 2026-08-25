@@ -29,7 +29,7 @@ paths out of Symfony Security are complete.
 
 # Documentation
 
-The documentation can be read on the following website: https://access-control-doc.spomky-labs.com/
+The documentation can be read on the following website: https://acf.spomky-labs.com/
 
 # Support
 

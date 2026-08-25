@@ -15,7 +15,7 @@ You should go to [the main repository](https://github.com/spomky-labs/access-con
 
 # Documentation
 
-The official documentation is available at https://access-control-doc.spomky-labs.com/
+The official documentation is available at https://acf.spomky-labs.com/
 
 # Support
 

@@ -239,8 +239,8 @@ final class SecurityParityTest extends WebTestCase
 
         static::assertInstanceOf(RoleHierarchyAdapter::class, $container->get('access_control.role_hierarchy'));
         static::assertSame(
-            $container->get('security.role_hierarchy')
-                ->getReachableRoleNames(['ROLE_ADMIN']),
+            array_values($container->get('security.role_hierarchy')
+                ->getReachableRoleNames(['ROLE_ADMIN'])),
             $container->get('access_control.role_hierarchy')
                 ->getReachableRoleNames(['ROLE_ADMIN']),
         );

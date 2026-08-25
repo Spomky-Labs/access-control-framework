@@ -27,8 +27,13 @@ final readonly class RoleHierarchyAdapter implements RoleHierarchyInterface
     ) {
     }
 
+    /**
+     * Security's own shape is not this contract's, and it has changed within a minor: 8.1.0 hands
+     * back an array keyed by role name, 8.1.4 a list. Passing it through made this adapter answer
+     * something its interface says is a list, silently, on whichever patch an application installed.
+     */
     public function getReachableRoleNames(array $roles): array
     {
-        return $this->roleHierarchy->getReachableRoleNames($roles);
+        return array_values($this->roleHierarchy->getReachableRoleNames($roles));
     }
 }

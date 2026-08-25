@@ -192,7 +192,7 @@ final class RoleHierarchyParityTest extends TestCase
 
         $adapter = new RoleHierarchyAdapter($hierarchy);
 
-        static::assertSame($hierarchy->getReachableRoleNames(['ROLE_ADMIN']), $adapter->getReachableRoleNames(['ROLE_ADMIN']));
+        static::assertSame(array_values($hierarchy->getReachableRoleNames(['ROLE_ADMIN'])), $adapter->getReachableRoleNames(['ROLE_ADMIN']));
         $this->assertAccessGranted(
             new RoleVoter($adapter)
                 ->vote(new AccessRequest(new FakeUser('alice', ['ROLE_ADMIN']), 'ROLE_USER')),

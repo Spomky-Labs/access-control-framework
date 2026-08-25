@@ -4,7 +4,7 @@ Journal de travail complet, arbitrages tranchés et mesures : `~/.claude/project
 
 ## État
 
-Portage hors du dépôt Symfony fait le 2026-08-17, après la clôture de symfony/symfony#59439. Suite verte sur Symfony 8.1 publié : 623 tests, 1163 assertions, sur PHP 8.4 comme sur 8.5. Outillage passé, CI branchée, dépôt aligné sur les autres frameworks : il ne reste que la création des dépôts GitHub.
+Portage hors du dépôt Symfony fait le 2026-08-17, après la clôture de symfony/symfony#59439. Suite verte à 623 tests et 1163 assertions sur PHP 8.4 comme sur 8.5, et sur la résolution la plus basse comme sur la plus haute. Outillage passé, CI branchée et verte, dépôt aligné sur les autres frameworks. Restent les deux dépôts de split et le secret `GITSPLIT_TOKEN`, qui ne servent qu'au moment de taguer.
 
 ## Mise en service
 
@@ -30,6 +30,12 @@ Premier passage le 2026-08-17, sur la suite verte de départ (623 tests, 1163 as
 **Un défaut trouvé par PHPStan**, corrigé : `AccessDecision::grant()`, `deny()` et `abstain()` annonçaient `@param iterable<AccessOutcome>` alors qu'elles passent au constructeur qui attend `iterable<CastVote>`, et que le corps lit `$vote->outcome`. Docblocks restés en arrière quand `CastVote` est apparu (`684fdf23d80`). 21 des 156 erreurs venaient de là.
 
 Les 135 restantes sont en baseline. Rien d'alarmant dedans : l'essentiel est du `mixed` venu des tableaux de configuration Symfony et des idiomes `!$array` que les règles strictes refusent. Deux familles à ne pas relire comme des manques : le `debug_backtrace` d'`AccessDecisionLoggerListener` **est** la fonctionnalité d'origine et d'appelant du journal, et les cinq traits « utilisés zéro fois » sont l'outillage public de test plus `AccessControlTrait`, que seuls les consommateurs utilisent.
+
+**Ce que le job « lowest deps » a trouvé, et il fallait la CI pour le voir.** Il installe la résolution la plus basse que les contraintes autorisent, et elle ne faisait pas tourner la suite : PHPUnit 10.5 et Symfony 8.0.
+
+Deux mensonges de packaging derrière ça. **Rien ne déclarait `phpunit/phpunit`**, il arrivait par `matthiasnoback/symfony-config-test`, dont le plancher `^10.5` n'a rien à voir avec ce que nos tests exigent. Et **`^8.0` sur les paquets Symfony n'a jamais été vrai**, le portage n'ayant jamais été vert que sur 8.1 : `ControllerArgumentsEvent::evaluate()`, que le listener du pont Security appelle, et `RoleHierarchy::getParentRoleNames()` arrivent tous deux en 8.1. Les planchers sont désormais ceux qui sont mesurés, `^13.3` et `^8.1`.
+
+**Et un vrai défaut dessous**, que seule la version basse expose : `RoleHierarchyAdapter` annonce `list<string>` et rendait ce que Security lui donnait. Or la forme de Security a changé **à l'intérieur d'un mineur**, 8.1.0 rend un tableau indexé par nom de rôle, 8.1.4 une liste. Donc sur certaines installations l'adaptateur répondait autre chose que son contrat, sans un mot. Même famille que les six dégradations silencieuses du journal, appliquée à la forme et non au contenu. Les deux tests de parité comparaient le tableau brut de Security au nôtre avec `assertSame`, donc ils vérifiaient les clés d'un tiers plutôt que les rôles ; ils comparent maintenant les valeurs.
 
 **Deptrac : 0 violation, 366 dépendances autorisées.** La séparation Library / Bundle / Security tient telle qu'elle est déclarée. Les 6 « uncovered » du premier passage étaient PHPUnit, dont les espaces de noms `Test/` dépendent légitimement puisqu'ils sont publiés : une couche a été ajoutée plutôt qu'une dérogation.
 

@@ -12,17 +12,206 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    uses: spomky-labs/phpqa/.github/workflows/reusable-ci.yml@main
-    with:
-      project_type: 'library'
-      php_versions: '["8.4"]'
-      experimental_php_versions: '["8.5"]'
-      default_php_version: '8.4'
-      enable_lowest_deps: true
-      # Off until Infection can run against PHPUnit 13 and the time budget a suite of functional
-      # kernels needs is decided. Both are written down in TODO.md; `castor qa:infect` still works.
-      enable_infection: false
-      enable_deptrac: true
-      enable_license_check: true
-      enable_js_tests: false
+  pre_checks:
+    name: "0️⃣ Pre-checks"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: "Check file permissions"
+        run: |
+          NON_EXECUTABLE=$(find . -type f -not -path './.git/*' -executable)
+          if [[ -n "$NON_EXECUTABLE" ]]; then
+            echo "Found non-executable files with executable permission:"
+            echo "$NON_EXECUTABLE"
+            exit 1
+          fi
+
+      - name: "Find non-printable ASCII characters"
+        run: |
+          if LC_ALL=C.UTF-8 find . -type f -name "*.php" -print0 | xargs -0 grep -PHn "[[:cntrl:]]"; then
+            echo "Non-printable ASCII characters found"
+            exit 1
+          fi
+
+  prepare_dependencies:
+    name: "📦 Prepare Composer Dependencies"
+    needs: [pre_checks]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    outputs:
+      cache-key: ${{ steps.cache-key-generator.outputs.key }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - id: cache-key-generator
+        run: echo "key=composer-${{ runner.os }}-${{ hashFiles('composer.json') }}" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ steps.cache-key-generator.outputs.key }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - uses: ramsey/composer-install@v4
+        with:
+          dependency-versions: highest
+          composer-options: --optimize-autoloader
+
+  phpstan:
+    name: "1️⃣ Static Analysis (PHPStan)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: castor qa:phpstan
+
+  ecs:
+    name: "2️⃣ Coding Standards (ECS)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: castor qa:ecs
+
+  rector:
+    name: "3️⃣ Refactoring (Rector)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: castor qa:rector
+
+  validate:
+    name: "4️⃣ Validate composer.json"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: castor qa:validate
+
+  lint:
+    name: "5️⃣ Syntax Check"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - run: composer exec -- parallel-lint src tests
+
+  check_licenses:
+    name: "6️⃣ License Check"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: castor qa:check-licenses
+
+  deptrac:
+    name: "7️⃣ Architecture Layer Check (Deptrac)"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/spomky-labs/phpqa:8.4
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: ${{ needs.prepare_dependencies.outputs.cache-key }}
+      - run: castor qa:deptrac
+
+  exported_files:
+    name: "8️⃣ Exported Files Check"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check exported files
+        run: |
+          EXPECTED="CODE_OF_CONDUCT.md,LICENSE,README.md,RELEASES.md,SECURITY.md,composer.json"
+          CURRENT=$(git archive HEAD | tar --list | grep -v '/$' | grep -Ev '^(assets|bin|config|fixtures|frankenphp|migrations|public|src|templates|translations)/' | sort | paste -sd "," -)
+          echo "CURRENT = ${CURRENT}"
+          echo "EXPECTED = ${EXPECTED}"
+          if [[ "$CURRENT" != "$EXPECTED" ]]; then
+            echo "❌ Exported files do not match expected list"
+            exit 1
+          fi
+
+  tests:
+    name: "🧪 Tests (PHP ${{ matrix.php-version }}${{ matrix.lowest-deps && ' - Lowest Deps' || '' }})"
+    needs: [prepare_dependencies]
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php-version: '8.4'
+            lowest-deps: true
+          - php-version: '8.4'
+          - php-version: '8.5'
+            experimental: true
+    container:
+      image: ghcr.io/spomky-labs/phpqa:${{ matrix.php-version }}
+    env:
+      XDEBUG_MODE: coverage
+      PHP_VERSION: ${{ matrix.php-version }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        run: |
+          if [ "${{ matrix.lowest-deps || 'false' }}" = "true" ]; then
+            composer update --prefer-lowest --no-interaction --no-progress
+          else
+            composer update --no-interaction --no-progress
+          fi
+      - name: Run tests
+        run: castor qa:phpunit

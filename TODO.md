@@ -70,12 +70,12 @@ Quatre corrections au passage, chacune mesurée. **Remontées chez `Spomky-Labs/
 
 ## Contributions amont, indépendantes de ce projet
 
-Deux correctifs trouvés en développant le composant, sans rapport avec l'access control, **tous les deux sortis** :
+Deux correctifs trouvés en développant le composant, sans rapport avec l'access control, **tous les deux corrigés en amont** :
 
 | PR | Contenu | État |
 |---|---|---|
 | amont 1 | `results.html.twig` du WebProfiler ne définit pas `has_dump` | [symfony/symfony#65312](https://github.com/symfony/symfony/pull/65312), **corrigé en amont** |
-| amont 2 | Le profilage console ne survit pas à une commande arrêtée à `ConsoleEvents::COMMAND` : `input`, `output`, `arguments` et `options` initialisés par `FrameworkBundle\Console\Application` | [symfony/symfony#65637](https://github.com/symfony/symfony/pull/65637), ouverte le 2026-08-25 sur `6.4`, CI verte |
+| amont 2 | Le profilage console ne survit pas à une commande arrêtée à `ConsoleEvents::COMMAND` | [symfony/symfony#65637](https://github.com/symfony/symfony/pull/65637), **fusionnée le 2026-08-25** sur `6.4`, remontée jusqu'à `8.2` |
 
 Amont 2 vise `6.4` et non `8.2` : le bogue existe depuis l'arrivée du profilage console et `6.4` est toujours la plus basse branche maintenue. Le diff sorti diffère de celui gardé en réserve, sur trois points mesurés :
 
@@ -84,6 +84,10 @@ Amont 2 vise `6.4` et non `8.2` : le bogue existe depuis l'arrivée du profilage
 - `CliRequest::getResponse()` redéfinissait `Response::getStatusCode()`, marquée `@final`, ce qui déprécie à chaque commande profilée. Personne ne le voyait faute de test sur ce chemin. Corrigé en écrivant `$statusCode` directement : un code de sortie n'est pas un statut HTTP et ne passe pas la validation de `setStatusCode()`.
 
 Il porte un test fonctionnel, `FrameworkBundle\Tests\Functional\ConsoleProfilerTest`, qui échoue sans le correctif et couvre aussi la commande qui tourne normalement. Le profilage console n'avait aucune couverture avant.
+
+**Ce qui a été fusionné n'est pas tout à fait ce qui a été proposé.** Nicolas Grekas a déplacé l'initialisation de `FrameworkBundle\Console\Application` vers `ConsoleProfilerListener::profile()`, sous un `if (! isset($command->input))`, et lit `arguments` et `options` sur l'entrée plutôt que de les vider. C'est mieux placé : le semis vit là où le profil est collecté, et non à la construction du wrapper. Le correctif de `CliRequest::getResponse()` est passé tel quel.
+
+Conséquence pour nous : **le contournement doit rester tel qu'il est**. `recordTheInputOnTheTracingWrapper()` renseigne les cinq propriétés, donc le `isset` amont saute le bloc et rien n'est laissé sans valeur. S'il ne renseignait que `input`, le garde amont sauterait le bloc et `arguments` resterait non initialisé, ce qui ramènerait l'erreur. À retirer seulement quand un correctif de `8.1` portant #65637 sera publié et que la contrainte pourra être relevée.
 
 Les diffs d'origine sont sauvés dans `~/.claude/projects/-home-florent-Projects-access-control-framework/upstream-patches/`, la branche Symfony qui les portait ayant été supprimée. Le troisième fichier de ce répertoire, `abandonne-frameworkbundle-integration.patch`, est l'intégration dans FrameworkBundle qui n'a plus lieu d'être : gardé pour mémoire, pas pour être rejoué.
 

@@ -2,11 +2,6 @@
 
 ![Build Status](https://github.com/Spomky-Labs/access-control-framework/workflows/📁%20PHP%20CI/badge.svg)
 
-[![Latest Stable Version](https://poser.pugx.org/spomky-labs/access-control-framework/v/stable)](https://packagist.org/packages/spomky-labs/access-control-framework)
-[![Total Downloads](https://poser.pugx.org/spomky-labs/access-control-framework/downloads)](https://packagist.org/packages/spomky-labs/access-control-framework)
-[![Latest Unstable Version](https://poser.pugx.org/spomky-labs/access-control-framework/v/unstable)](https://packagist.org/packages/spomky-labs/access-control-framework)
-[![License](https://poser.pugx.org/spomky-labs/access-control-framework/license)](https://packagist.org/packages/spomky-labs/access-control-framework)
-
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Spomky-Labs/access-control-framework/badge)](https://api.securityscorecards.dev/projects/github.com/Spomky-Labs/access-control-framework)
 
 **Access Control** decides whether a requester is allowed to perform an action on a subject. It is authorization on its
@@ -17,10 +12,10 @@ This framework contains a PHP library and a Symfony bundle. Installing the bundl
 Security changes nothing you can see: your voters keep being consulted, `#[IsGranted]` is read, `is_granted()` answers in
 your templates, and your `security.yaml` stays byte for byte what it was. What changed is who decides.
 
-| Package | Repository |
-|---|---|
-| `spomky-labs/access-control-lib` | [access-control-lib](https://github.com/spomky-labs/access-control-lib) |
-| `spomky-labs/access-control-bundle` | [access-control-bundle](https://github.com/spomky-labs/access-control-bundle) |
+| Package | Repository | Version | Downloads |
+|---|---|---|---|
+| `spomky-labs/access-control-lib` | [access-control-lib](https://github.com/spomky-labs/access-control-lib) | [![Latest Stable Version](https://poser.pugx.org/spomky-labs/access-control-lib/v/stable)](https://packagist.org/packages/spomky-labs/access-control-lib) | [![Total Downloads](https://poser.pugx.org/spomky-labs/access-control-lib/downloads)](https://packagist.org/packages/spomky-labs/access-control-lib) |
+| `spomky-labs/access-control-bundle` | [access-control-bundle](https://github.com/spomky-labs/access-control-bundle) | [![Latest Stable Version](https://poser.pugx.org/spomky-labs/access-control-bundle/v/stable)](https://packagist.org/packages/spomky-labs/access-control-bundle) | [![Total Downloads](https://poser.pugx.org/spomky-labs/access-control-bundle/downloads)](https://packagist.org/packages/spomky-labs/access-control-bundle) |
 
 Both are read-only subtree splits of this repository. Issues and pull requests belong here.
 

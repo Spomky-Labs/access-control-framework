@@ -11,6 +11,7 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\LogicException;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Workflow\EventListener\GuardListener as WorkflowGuardListener;
 
@@ -140,6 +141,22 @@ final class WorkflowGuardTest extends TestCase
         $kernel = new class($shape) extends WorkflowGuardKernel {
             public ?string $guardListenerClass = null;
 
+            public function __construct(
+                private readonly string $observedShape,
+            ) {
+                parent::__construct($observedShape);
+            }
+
+            /**
+             * A directory of its own, wiped before booting. The pass below only records a class while
+             * the container is being compiled, so a dump left by an earlier run answers null and the
+             * assertion then holds on nothing: measured, the suite passed cold and failed warm.
+             */
+            public function getCacheDir(): string
+            {
+                return sys_get_temp_dir() . '/access-control-bundle-workflow/observed/' . $this->observedShape;
+            }
+
             protected function build(ContainerBuilder $container): void
             {
                 parent::build($container);
@@ -162,6 +179,8 @@ final class WorkflowGuardTest extends TestCase
             }
         };
 
+        new Filesystem()
+            ->remove($kernel->getCacheDir());
         $kernel->boot();
 
         return $kernel->guardListenerClass;

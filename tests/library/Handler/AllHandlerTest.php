@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Handler;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\Attribute\All;
 use AccessControl\DecisionVote;
 use AccessControl\Handler\AccessPolicyHandlerInterface;
 use AccessControl\Handler\AllHandler;
 use AccessControl\Test\AccessPolicyHandlerTestTrait;
+use PHPUnit\Framework\TestCase;
 
 final class AllHandlerTest extends TestCase
 {
@@ -25,7 +25,7 @@ final class AllHandlerTest extends TestCase
     {
         $outcome = $this->evaluate(new All([self::granting(), self::granting()]));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     /**
@@ -36,8 +36,8 @@ final class AllHandlerTest extends TestCase
     {
         $outcome = $this->evaluate(new All([self::granting(), self::denying('The post is locked.'), self::granting()]));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
-        $this->assertSame('The post is locked.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
+        static::assertSame('The post is locked.', $outcome->reason);
     }
 
     /**
@@ -48,15 +48,15 @@ final class AllHandlerTest extends TestCase
     {
         $outcome = $this->evaluate(new All([self::abstaining(), self::abstaining()]));
 
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
-        $this->assertSame('No nested access policy applied.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
+        static::assertSame('No nested access policy applied.', $outcome->reason);
     }
 
     public function testOneChildGrantingAmongAbstentions()
     {
         $outcome = $this->evaluate(new All([self::abstaining(), self::granting(), self::abstaining()]));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     /**
@@ -65,14 +65,14 @@ final class AllHandlerTest extends TestCase
      */
     public function testAnEmptyCompositeAbstains()
     {
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $this->evaluate(new All([]))->decision);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $this->evaluate(new All([]))->decision);
     }
 
     public function testCompositesNest()
     {
         $outcome = $this->evaluate(new All([self::granting(), new All([self::granting(), self::denying()])]));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
     }
 
     protected function createHandler(): AccessPolicyHandlerInterface

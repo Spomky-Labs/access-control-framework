@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Test;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
@@ -12,6 +11,7 @@ use AccessControl\CastVote;
 use AccessControl\DecisionVote;
 use AccessControl\Strategy\StrategyInterface;
 use AccessControl\VoterInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Runs a strategy through a matrix of votes, to be used in a PHPUnit test case.
@@ -27,14 +27,10 @@ use AccessControl\VoterInterface;
  * The expectation is a boolean, as it is there: a manager settles an abstention rather than
  * returning it. A strategy whose abstention has to be told apart from a denial is tested by
  * calling evaluate() directly.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 trait AccessDecisionStrategyTestTrait
 {
     /**
-     * @dataProvider provideStrategyTests
-     *
      * @param list<VoterInterface> $voters
      */
     #[DataProvider('provideStrategyTests')]
@@ -43,7 +39,7 @@ trait AccessDecisionStrategyTestTrait
         $manager = new AccessControlManager([$strategy], $voters);
         $decision = $manager->decide(new AccessRequest(null, 'ROLE_FOO'));
 
-        $this->assertSame($expected, DecisionVote::ACCESS_GRANTED === $decision->decision, $decision->reason ?? '');
+        $this->assertSame($expected, $decision->decision === DecisionVote::ACCESS_GRANTED, $decision->reason ?? '');
     }
 
     /**
@@ -82,7 +78,7 @@ trait AccessDecisionStrategyTestTrait
 
     final protected static function getVoter(DecisionVote $vote, int|float $weight = 1): VoterInterface
     {
-        return new class($vote, $weight) implements VoterInterface {
+        return new readonly class($vote, $weight) implements VoterInterface {
             public function __construct(
                 private DecisionVote $vote,
                 private int|float $weight,

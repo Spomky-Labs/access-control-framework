@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Test;
 
-use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
@@ -13,6 +11,8 @@ use AccessControl\Strategy\PermitOverridesStrategy;
 use AccessControl\Test\AccessOutcomeAssertionsTrait;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\TestCase;
 
 final class AccessOutcomeAssertionsTraitTest extends TestCase
 {
@@ -45,10 +45,10 @@ final class AccessOutcomeAssertionsTraitTest extends TestCase
     {
         try {
             $this->assertAccessGranted(AccessOutcome::deny('The user does not have the required role.'));
-            $this->fail('The assertion should have failed.');
+            static::fail('The assertion should have failed.');
         } catch (AssertionFailedError $failure) {
-            $this->assertStringContainsString('Failed asserting that access is granted.', $failure->getMessage());
-            $this->assertStringContainsString('Reason: The user does not have the required role.', $failure->getMessage());
+            static::assertStringContainsString('Failed asserting that access is granted.', $failure->getMessage());
+            static::assertStringContainsString('Reason: The user does not have the required role.', $failure->getMessage());
         }
     }
 
@@ -56,9 +56,9 @@ final class AccessOutcomeAssertionsTraitTest extends TestCase
     {
         try {
             $this->assertAccessDenied(AccessOutcome::grant());
-            $this->fail('The assertion should have failed.');
+            static::fail('The assertion should have failed.');
         } catch (AssertionFailedError $failure) {
-            $this->assertStringContainsString('No reason was given.', $failure->getMessage());
+            static::assertStringContainsString('No reason was given.', $failure->getMessage());
         }
     }
 
@@ -66,9 +66,9 @@ final class AccessOutcomeAssertionsTraitTest extends TestCase
     {
         try {
             $this->assertAccessGranted(AccessOutcome::deny('Ignored.'), 'The author should be allowed to edit.');
-            $this->fail('The assertion should have failed.');
+            static::fail('The assertion should have failed.');
         } catch (AssertionFailedError $failure) {
-            $this->assertStringContainsString('The author should be allowed to edit.', $failure->getMessage());
+            static::assertStringContainsString('The author should be allowed to edit.', $failure->getMessage());
         }
     }
 }

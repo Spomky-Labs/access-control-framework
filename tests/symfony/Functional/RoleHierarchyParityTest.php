@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * at all and declares its hierarchy on this component's own key. That third column is what was
  * missing, and it found a promise the configuration could not keep.
  */
-class RoleHierarchyParityTest extends WebTestCase
+final class RoleHierarchyParityTest extends WebTestCase
 {
     private static string $shape = StrategyParityKernel::SECURITY;
 
@@ -31,9 +31,9 @@ class RoleHierarchyParityTest extends WebTestCase
         $both = $this->answerOf(StrategyParityKernel::BOTH);
         $alone = $this->answerOf(StrategyParityKernel::ACCESS_CONTROL);
 
-        $this->assertSame('granted', $security, 'Security did not answer what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle changed the answer.');
-        $this->assertSame($security, $alone, 'The component alone does not reach the inherited role.');
+        static::assertSame('granted', $security, 'Security did not answer what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle changed the answer.');
+        static::assertSame($security, $alone, 'The component alone does not reach the inherited role.');
     }
 
     private function answerOf(string $shape): string
@@ -48,6 +48,7 @@ class RoleHierarchyParityTest extends WebTestCase
             'HTTP_X_ROLES' => 'ROLE_ADMIN',
         ]);
 
-        return $client->getResponse()->getContent();
+        return $client->getResponse()
+            ->getContent();
     }
 }

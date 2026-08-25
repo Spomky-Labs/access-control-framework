@@ -26,8 +26,6 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  * enough to bury the denial under a wrapper. The outer layers are dropped on translation, which is
  * what the firewall does with them anyway.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class AccessDeniedExceptionListener implements EventSubscriberInterface

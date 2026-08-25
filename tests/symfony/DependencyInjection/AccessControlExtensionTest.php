@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\DependencyInjection;
 
-use PHPUnit\Framework\TestCase;
-use AccessControl\Bundle\DependencyInjection\AccessControlExtension;
 use AccessControl\AccessControlManagerInterface;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\Argument;
 use AccessControl\Attribute\AtLeastOneOf;
 use AccessControl\Bridge\Security\IsGrantedListener;
+use AccessControl\Bundle\DependencyInjection\AccessControlExtension;
 use AccessControl\Http\AccessRule;
 use AccessControl\RequesterBoundChecker;
 use AccessControl\Twig\AccessControlExtension as AccessControlTwigExtension;
+use ArrayObject;
+use LogicException;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\Argument\TaggedIteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -27,7 +29,7 @@ use Symfony\Component\HttpFoundation\RequestMatcher\MethodRequestMatcher;
 use Symfony\Component\HttpFoundation\RequestMatcher\PathRequestMatcher;
 use Symfony\Component\HttpFoundation\RequestMatcher\PortRequestMatcher;
 
-class AccessControlExtensionTest extends TestCase
+final class AccessControlExtensionTest extends TestCase
 {
     /**
      * There is no enabled flag anywhere: registering the bundle is what turns the component on, so
@@ -37,15 +39,15 @@ class AccessControlExtensionTest extends TestCase
     {
         $container = $this->load();
 
-        $this->assertTrue($container->hasDefinition('access_control.manager'));
-        $this->assertSame('access_control.manager', (string) $container->getAlias(AccessControlManagerInterface::class));
+        static::assertTrue($container->hasDefinition('access_control.manager'));
+        static::assertSame('access_control.manager', (string) $container->getAlias(AccessControlManagerInterface::class));
 
         $manager = $container->getDefinition('access_control.manager');
-        $this->assertEquals(new TaggedIteratorArgument('access_control.strategy'), $manager->getArgument(0));
-        $this->assertEquals(new TaggedIteratorArgument('access_control.voter'), $manager->getArgument(1));
+        static::assertEquals(new TaggedIteratorArgument('access_control.strategy'), $manager->getArgument(0));
+        static::assertEquals(new TaggedIteratorArgument('access_control.voter'), $manager->getArgument(1));
 
         foreach (['permit_overrides', 'deny_overrides', 'majority', 'first_applicable'] as $strategy) {
-            $this->assertTrue($container->hasDefinition('access_control.strategy.'.$strategy), $strategy);
+            static::assertTrue($container->hasDefinition('access_control.strategy.' . $strategy), $strategy);
         }
     }
 
@@ -53,10 +55,10 @@ class AccessControlExtensionTest extends TestCase
     {
         $container = $this->load();
 
-        $this->assertSame('permit_overrides', $container->getParameter('access_control.default_strategy'));
-        $this->assertTrue($container->getParameter('access_control.allow_if_equal_granted_denied'));
-        $this->assertSame('ROLE_', $container->getParameter('access_control.role_prefix'));
-        $this->assertSame([], $container->getParameter('access_control.role_hierarchy.roles'));
+        static::assertSame('permit_overrides', $container->getParameter('access_control.default_strategy'));
+        static::assertTrue($container->getParameter('access_control.allow_if_equal_granted_denied'));
+        static::assertSame('ROLE_', $container->getParameter('access_control.role_prefix'));
+        static::assertSame([], $container->getParameter('access_control.role_hierarchy.roles'));
     }
 
     public function testTheConfigurationReachesTheParameters()
@@ -67,17 +69,19 @@ class AccessControlExtensionTest extends TestCase
             'role_prefix' => 'PERM_',
         ]);
 
-        $this->assertSame('deny_overrides', $container->getParameter('access_control.default_strategy'));
-        $this->assertFalse($container->getParameter('access_control.allow_if_equal_granted_denied'));
-        $this->assertSame('PERM_', $container->getParameter('access_control.role_prefix'));
-        $this->assertSame('%access_control.role_prefix%', (string) $container->getDefinition('access_control.voter.role')->getArgument(1));
+        static::assertSame('deny_overrides', $container->getParameter('access_control.default_strategy'));
+        static::assertFalse($container->getParameter('access_control.allow_if_equal_granted_denied'));
+        static::assertSame('PERM_', $container->getParameter('access_control.role_prefix'));
+        static::assertSame('%access_control.role_prefix%', (string) $container->getDefinition('access_control.voter.role')->getArgument(1));
     }
 
     public function testAStrategyThatIsNotOneOfTheFourIsRejected()
     {
         $this->expectException(InvalidConfigurationException::class);
 
-        $this->load(['default_strategy' => 'affirmative']);
+        $this->load([
+            'default_strategy' => 'affirmative',
+        ]);
     }
 
     /**
@@ -86,10 +90,13 @@ class AccessControlExtensionTest extends TestCase
      */
     public function testTheDecisionLoggerIsAlwaysThere()
     {
-        $logger = $this->load()->getDefinition('access_control.decision_logger');
+        $logger = $this->load()
+            ->getDefinition('access_control.decision_logger');
 
-        $this->assertSame([[]], $logger->getTag('kernel.event_subscriber'));
-        $this->assertSame([['method' => 'reset']], $logger->getTag('kernel.reset'));
+        static::assertSame([[]], $logger->getTag('kernel.event_subscriber'));
+        static::assertSame([[
+            'method' => 'reset',
+        ]], $logger->getTag('kernel.reset'));
     }
 
     /**
@@ -100,12 +107,12 @@ class AccessControlExtensionTest extends TestCase
     {
         $container = $this->load();
 
-        $this->assertTrue($container->hasDefinition('data_collector.access_control'));
+        static::assertTrue($container->hasDefinition('data_collector.access_control'));
 
-        $container->register('cache.system', \ArrayObject::class);
-        $container->compile();
+        $container->register('cache.system', ArrayObject::class);
+        $container->compile(true);
 
-        $this->assertFalse($container->has('data_collector.access_control'));
+        static::assertFalse($container->has('data_collector.access_control'));
     }
 
     /**
@@ -116,9 +123,9 @@ class AccessControlExtensionTest extends TestCase
     {
         $container = $this->load();
 
-        $this->assertSame(RequesterBoundChecker::class, $container->getDefinition('access_control.checker')->getClass());
-        $this->assertSame('access_control.checker', (string) $container->getAlias(RequesterBoundChecker::class));
-        $this->assertEquals(new Reference('access_control.requester_provider'), $container->getDefinition('access_control.checker')->getArgument(1));
+        static::assertSame(RequesterBoundChecker::class, $container->getDefinition('access_control.checker')->getClass());
+        static::assertSame('access_control.checker', (string) $container->getAlias(RequesterBoundChecker::class));
+        static::assertEquals(new Reference('access_control.requester_provider'), $container->getDefinition('access_control.checker')->getArgument(1));
     }
 
     /**
@@ -128,18 +135,20 @@ class AccessControlExtensionTest extends TestCase
      */
     public function testTheIsGrantedListenerIsRegisteredWhenTheAttributeExists()
     {
-        $listener = $this->load()->getDefinition('access_control.listener.is_granted');
+        $listener = $this->load()
+            ->getDefinition('access_control.listener.is_granted');
 
-        $this->assertSame(IsGrantedListener::class, $listener->getClass());
-        $this->assertSame([[]], $listener->getTag('kernel.event_subscriber'));
+        static::assertSame(IsGrantedListener::class, $listener->getClass());
+        static::assertSame([[]], $listener->getTag('kernel.event_subscriber'));
     }
 
     public function testTheTwigFunctionsAreRegisteredWhenTwigIsThere()
     {
-        $extension = $this->load()->getDefinition('access_control.twig.extension');
+        $extension = $this->load()
+            ->getDefinition('access_control.twig.extension');
 
-        $this->assertSame(AccessControlTwigExtension::class, $extension->getClass());
-        $this->assertSame([[]], $extension->getTag('twig.extension'));
+        static::assertSame(AccessControlTwigExtension::class, $extension->getClass());
+        static::assertSame([[]], $extension->getTag('twig.extension'));
     }
 
     /**
@@ -150,31 +159,37 @@ class AccessControlExtensionTest extends TestCase
     {
         $container = $this->load();
 
-        $this->assertFalse($container->hasDefinition('access_control.rule_map'));
-        $this->assertFalse($container->hasDefinition('access_control.listener.access_rule'));
-        $this->assertFalse($container->hasDefinition('access_control.listener.channel'));
+        static::assertFalse($container->hasDefinition('access_control.rule_map'));
+        static::assertFalse($container->hasDefinition('access_control.listener.access_rule'));
+        static::assertFalse($container->hasDefinition('access_control.listener.channel'));
     }
 
     public function testARuleBecomesAMatcherAndAPolicy()
     {
-        $container = $this->load(['rules' => [
-            ['path' => '^/admin', 'roles' => ['ROLE_ADMIN']],
-        ]]);
+        $container = $this->load([
+            'rules' => [
+                [
+                    'path' => '^/admin',
+                    'roles' => ['ROLE_ADMIN'],
+                ],
+            ],
+        ]);
 
-        $rules = $container->getDefinition('access_control.rule_map')->getArgument(0);
+        $rules = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0);
 
-        $this->assertCount(1, $rules);
-        $this->assertSame(AccessRule::class, $rules[0]->getClass());
+        static::assertCount(1, $rules);
+        static::assertSame(AccessRule::class, $rules[0]->getClass());
 
         $matchers = $rules[0]->getArgument(0)->getArgument(0);
-        $this->assertCount(1, $matchers);
-        $this->assertSame(PathRequestMatcher::class, $matchers[0]->getClass());
-        $this->assertSame('^/admin', $matchers[0]->getArgument(0));
+        static::assertCount(1, $matchers);
+        static::assertSame(PathRequestMatcher::class, $matchers[0]->getClass());
+        static::assertSame('^/admin', $matchers[0]->getArgument(0));
 
         $accessPolicy = $rules[0]->getArgument(1);
-        $this->assertSame(AccessPolicy::class, $accessPolicy->getClass());
-        $this->assertSame('ROLE_ADMIN', $accessPolicy->getArgument(0));
-        $this->assertNull($rules[0]->getArgument(2));
+        static::assertSame(AccessPolicy::class, $accessPolicy->getClass());
+        static::assertSame('ROLE_ADMIN', $accessPolicy->getArgument(0));
+        static::assertNull($rules[0]->getArgument(2));
     }
 
     /**
@@ -183,14 +198,23 @@ class AccessControlExtensionTest extends TestCase
      */
     public function testTheRequestIsNamedAsTheSubjectOfEveryRule()
     {
-        $container = $this->load(['rules' => [
-            ['path' => '^/admin', 'roles' => ['ROLE_ADMIN'], 'allow_if' => "request.getClientIp() == '127.0.0.1'"],
-        ]]);
+        $container = $this->load([
+            'rules' => [
+                [
+                    'path' => '^/admin',
+                    'roles' => ['ROLE_ADMIN'],
+                    'allow_if' => "request.getClientIp() == '127.0.0.1'",
+                ],
+            ],
+        ]);
 
-        $accessPolicies = $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(1)->getArgument(0);
+        $accessPolicies = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0)[0]
+            ->getArgument(1)
+            ->getArgument(0);
 
         foreach ($accessPolicies as $accessPolicy) {
-            $this->assertEquals(new Definition(Argument::class, ['request']), $accessPolicy->getArgument(1));
+            static::assertEquals(new Definition(Argument::class, ['request']), $accessPolicy->getArgument(1));
         }
     }
 
@@ -200,40 +224,61 @@ class AccessControlExtensionTest extends TestCase
      */
     public function testSeveralRolesBecomeOneAtLeastOneOf()
     {
-        $container = $this->load(['rules' => [
-            ['path' => '^/admin', 'roles' => ['ROLE_ADMIN', 'ROLE_MANAGER']],
-        ]]);
+        $container = $this->load([
+            'rules' => [
+                [
+                    'path' => '^/admin',
+                    'roles' => ['ROLE_ADMIN', 'ROLE_MANAGER'],
+                ],
+            ],
+        ]);
 
-        $accessPolicy = $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(1);
+        $accessPolicy = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0)[0]
+            ->getArgument(1);
 
-        $this->assertSame(AtLeastOneOf::class, $accessPolicy->getClass());
-        $this->assertCount(2, $accessPolicy->getArgument(0));
+        static::assertSame(AtLeastOneOf::class, $accessPolicy->getClass());
+        static::assertCount(2, $accessPolicy->getArgument(0));
     }
 
     public function testAnAllowIfJoinsTheRolesAsOneMoreBranch()
     {
-        $container = $this->load(['rules' => [
-            ['path' => '^/admin', 'roles' => ['ROLE_ADMIN'], 'allow_if' => "request.getClientIp() == '127.0.0.1'"],
-        ]]);
+        $container = $this->load([
+            'rules' => [
+                [
+                    'path' => '^/admin',
+                    'roles' => ['ROLE_ADMIN'],
+                    'allow_if' => "request.getClientIp() == '127.0.0.1'",
+                ],
+            ],
+        ]);
 
-        $accessPolicy = $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(1);
+        $accessPolicy = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0)[0]
+            ->getArgument(1);
         $branches = $accessPolicy->getArgument(0);
 
-        $this->assertSame(AtLeastOneOf::class, $accessPolicy->getClass());
-        $this->assertCount(2, $branches);
-        $this->assertEquals(new Definition(Expression::class, ["request.getClientIp() == '127.0.0.1'"]), $branches[1]->getArgument(0));
+        static::assertSame(AtLeastOneOf::class, $accessPolicy->getClass());
+        static::assertCount(2, $branches);
+        static::assertEquals(new Definition(Expression::class, ["request.getClientIp() == '127.0.0.1'"]), $branches[1]->getArgument(0));
     }
 
     public function testARuleThatOnlyRequiresAChannelHasNoPolicyAtAll()
     {
-        $container = $this->load(['rules' => [
-            ['path' => '^/', 'requires_channel' => 'https'],
-        ]]);
+        $container = $this->load([
+            'rules' => [
+                [
+                    'path' => '^/',
+                    'requires_channel' => 'https',
+                ],
+            ],
+        ]);
 
-        $rule = $container->getDefinition('access_control.rule_map')->getArgument(0)[0];
+        $rule = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0)[0];
 
-        $this->assertNull($rule->getArgument(1));
-        $this->assertSame('https', $rule->getArgument(2));
+        static::assertNull($rule->getArgument(1));
+        static::assertSame('https', $rule->getArgument(2));
     }
 
     /**
@@ -242,67 +287,113 @@ class AccessControlExtensionTest extends TestCase
      */
     public function testTheChannelListenerFollowsTheChannels()
     {
-        $this->assertFalse($this->load(['rules' => [['path' => '^/', 'roles' => ['ROLE_USER']]]])->hasDefinition('access_control.listener.channel'));
-        $this->assertTrue($this->load(['rules' => [['path' => '^/', 'requires_channel' => 'https']]])->hasDefinition('access_control.listener.channel'));
+        static::assertFalse($this->load([
+            'rules' => [[
+                'path' => '^/',
+                'roles' => ['ROLE_USER'],
+            ]],
+        ])->hasDefinition('access_control.listener.channel'));
+        static::assertTrue($this->load([
+            'rules' => [[
+                'path' => '^/',
+                'requires_channel' => 'https',
+            ]],
+        ])->hasDefinition('access_control.listener.channel'));
     }
 
     public function testEveryMatchingOptionReachesItsMatcher()
     {
-        $container = $this->load(['rules' => [[
-            'path' => '^/admin',
-            'host' => 'admin\.example\.com',
-            'port' => 8080,
-            'methods' => ['post', 'put'],
-            'ips' => ['192.168.0.0/16'],
-            'attributes' => ['_locale' => 'fr'],
-        ]]]);
+        $container = $this->load([
+            'rules' => [[
+                'path' => '^/admin',
+                'host' => 'admin\.example\.com',
+                'port' => 8080,
+                'methods' => ['post', 'put'],
+                'ips' => ['192.168.0.0/16'],
+                'attributes' => [
+                    '_locale' => 'fr',
+                ],
+            ]],
+        ]);
 
-        $matchers = $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(0)->getArgument(0);
+        $matchers = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0)[0]
+            ->getArgument(0)
+            ->getArgument(0);
         $byClass = [];
 
         foreach ($matchers as $matcher) {
             $byClass[$matcher->getClass()] = $matcher->getArgument(0);
         }
 
-        $this->assertSame(['POST', 'PUT'], $byClass[MethodRequestMatcher::class]);
-        $this->assertSame('^/admin', $byClass[PathRequestMatcher::class]);
-        $this->assertSame('admin\.example\.com', $byClass[HostRequestMatcher::class]);
-        $this->assertSame(['192.168.0.0/16'], $byClass[IpsRequestMatcher::class]);
-        $this->assertSame(['_locale' => 'fr'], $byClass[AttributesRequestMatcher::class]);
-        $this->assertSame(8080, $byClass[PortRequestMatcher::class]);
+        static::assertSame(['POST', 'PUT'], $byClass[MethodRequestMatcher::class]);
+        static::assertSame('^/admin', $byClass[PathRequestMatcher::class]);
+        static::assertSame('admin\.example\.com', $byClass[HostRequestMatcher::class]);
+        static::assertSame(['192.168.0.0/16'], $byClass[IpsRequestMatcher::class]);
+        static::assertSame([
+            '_locale' => 'fr',
+        ], $byClass[AttributesRequestMatcher::class]);
+        static::assertSame(8080, $byClass[PortRequestMatcher::class]);
     }
 
     public function testTheRouteOptionIsOneMoreRequestAttribute()
     {
-        $container = $this->load(['rules' => [['route' => 'admin_dashboard', 'roles' => ['ROLE_ADMIN']]]]);
+        $container = $this->load([
+            'rules' => [[
+                'route' => 'admin_dashboard',
+                'roles' => ['ROLE_ADMIN'],
+            ]],
+        ]);
 
-        $matchers = $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(0)->getArgument(0);
+        $matchers = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0)[0]
+            ->getArgument(0)
+            ->getArgument(0);
 
-        $this->assertSame(AttributesRequestMatcher::class, $matchers[0]->getClass());
-        $this->assertSame(['_route' => 'admin_dashboard'], $matchers[0]->getArgument(0));
+        static::assertSame(AttributesRequestMatcher::class, $matchers[0]->getClass());
+        static::assertSame([
+            '_route' => 'admin_dashboard',
+        ], $matchers[0]->getArgument(0));
     }
 
     public function testAnApplicationMatcherIsTakenAsIs()
     {
-        $container = $this->load(['rules' => [['request_matcher' => 'app.matcher', 'roles' => ['ROLE_ADMIN']]]]);
+        $container = $this->load([
+            'rules' => [[
+                'request_matcher' => 'app.matcher',
+                'roles' => ['ROLE_ADMIN'],
+            ]],
+        ]);
 
-        $this->assertEquals(new Reference('app.matcher'), $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(0));
+        static::assertEquals(new Reference('app.matcher'), $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(0));
     }
 
     public function testAnApplicationMatcherRulesOutTheOtherMatchingOptions()
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('The "request_matcher" option should not be specified alongside other options.');
+        $this->expectExceptionMessageIsOrContains('The "request_matcher" option should not be specified alongside other options.');
 
-        $this->load(['rules' => [['request_matcher' => 'app.matcher', 'path' => '^/admin']]]);
+        $this->load([
+            'rules' => [[
+                'request_matcher' => 'app.matcher',
+                'path' => '^/admin',
+            ]],
+        ]);
     }
 
     public function testTheRouteOptionAndTheRouteAttributeAreTheSameThingTwice()
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('The "route" option should not be specified alongside "attributes._route" option.');
+        $this->expectExceptionMessageIsOrContains('The "route" option should not be specified alongside "attributes._route" option.');
 
-        $this->load(['rules' => [['route' => 'admin', 'attributes' => ['_route' => 'admin']]]]);
+        $this->load([
+            'rules' => [[
+                'route' => 'admin',
+                'attributes' => [
+                    '_route' => 'admin',
+                ],
+            ]],
+        ]);
     }
 
     /**
@@ -312,37 +403,55 @@ class AccessControlExtensionTest extends TestCase
     public function testAnEmptyRuleIsRejected()
     {
         $this->expectException(InvalidConfigurationException::class);
-        $this->expectExceptionMessage('One or more access control rules are empty.');
+        $this->expectExceptionMessageIsOrContains('One or more access control rules are empty.');
 
-        $this->load(['rules' => [[]]]);
+        $this->load([
+            'rules' => [[]],
+        ]);
     }
 
     public function testAnIpThatIsNotOneIsRejected()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('is not a valid IP address');
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('is not a valid IP address');
 
-        $this->load(['rules' => [['path' => '^/', 'ips' => ['not-an-ip'], 'roles' => ['ROLE_USER']]]]);
+        $this->load([
+            'rules' => [[
+                'path' => '^/',
+                'ips' => ['not-an-ip'],
+                'roles' => ['ROLE_USER'],
+            ]],
+        ]);
     }
 
     public function testRulesAreKeptInDeclarationOrder()
     {
-        $container = $this->load(['rules' => [
-            ['path' => '^/admin', 'roles' => ['ROLE_ADMIN']],
-            ['path' => '^/', 'roles' => ['ROLE_USER']],
-        ]]);
+        $container = $this->load([
+            'rules' => [
+                [
+                    'path' => '^/admin',
+                    'roles' => ['ROLE_ADMIN'],
+                ],
+                [
+                    'path' => '^/',
+                    'roles' => ['ROLE_USER'],
+                ],
+            ],
+        ]);
 
-        $rules = $container->getDefinition('access_control.rule_map')->getArgument(0);
+        $rules = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0);
 
-        $this->assertSame('^/admin', $rules[0]->getArgument(0)->getArgument(0)[0]->getArgument(0));
-        $this->assertSame('^/', $rules[1]->getArgument(0)->getArgument(0)[0]->getArgument(0));
+        static::assertSame('^/admin', $rules[0]->getArgument(0)->getArgument(0)[0]->getArgument(0));
+        static::assertSame('^/', $rules[1]->getArgument(0)->getArgument(0)[0]->getArgument(0));
     }
 
     private function load(array $config = []): ContainerBuilder
     {
         $container = new ContainerBuilder();
         $container->setParameter('kernel.debug', true);
-        (new AccessControlExtension())->load([$config], $container);
+        new AccessControlExtension()
+            ->load([$config], $container);
 
         return $container;
     }

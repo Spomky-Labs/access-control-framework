@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace AccessControl;
 
+use ArrayIterator;
+use Countable;
+use IteratorAggregate;
+use function array_key_exists;
+use function count;
+
 /**
  * The circumstances of a request, that is what belongs neither to the requester, nor to the
  * subject, nor to the attribute.
@@ -17,11 +23,9 @@ namespace AccessControl;
  * case: a rule that abstains on a missing key fails open, and no entry point should be able to
  * disable a rule by omission.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
-final readonly class AccessEnvironment implements \IteratorAggregate, \Countable
+final readonly class AccessEnvironment implements IteratorAggregate, Countable
 {
     /**
      * @param array<string, mixed> $parameters
@@ -41,7 +45,7 @@ final readonly class AccessEnvironment implements \IteratorAggregate, \Countable
 
     public function get(string $key, mixed $default = null): mixed
     {
-        return \array_key_exists($key, $this->parameters) ? $this->parameters[$key] : $default;
+        return array_key_exists($key, $this->parameters) ? $this->parameters[$key] : $default;
     }
 
     /**
@@ -49,17 +53,17 @@ final readonly class AccessEnvironment implements \IteratorAggregate, \Countable
      */
     public function has(string $key): bool
     {
-        return \array_key_exists($key, $this->parameters);
+        return array_key_exists($key, $this->parameters);
     }
 
     /**
      * Returns an iterator for parameters.
      *
-     * @return \ArrayIterator<string, mixed>
+     * @return ArrayIterator<string, mixed>
      */
-    public function getIterator(): \ArrayIterator
+    public function getIterator(): ArrayIterator
     {
-        return new \ArrayIterator($this->parameters);
+        return new ArrayIterator($this->parameters);
     }
 
     /**
@@ -67,6 +71,6 @@ final readonly class AccessEnvironment implements \IteratorAggregate, \Countable
      */
     public function count(): int
     {
-        return \count($this->parameters);
+        return count($this->parameters);
     }
 }

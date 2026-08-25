@@ -17,7 +17,7 @@ final class PostVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        if (!$accessRequest->subject instanceof Post) {
+        if (! $accessRequest->subject instanceof Post) {
             return AccessOutcome::abstain('The subject is not a post.');
         }
 
@@ -28,7 +28,7 @@ final class PostVoter implements VoterInterface
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return 'read' === $attribute;
+        return $attribute === 'read';
     }
 
     public function supportsSubject(mixed $subject): bool

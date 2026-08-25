@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
-use AccessControl\Bundle\AccessControlBundle;
-use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
-use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
-use Symfony\Bundle\TwigBundle\TwigBundle;
-use Symfony\Bundle\WebProfilerBundle\WebProfilerBundle;
 use AccessControl\AccessControlManagerInterface;
 use AccessControl\AccessEnvironment;
 use AccessControl\AccessRequest;
@@ -17,12 +11,21 @@ use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\All;
 use AccessControl\Attribute\AtLeastOneOf;
 use AccessControl\Attribute\When;
+use AccessControl\Bundle\AccessControlBundle;
+use Psr\Log\NullLogger;
+use ReflectionClass;
+use stdClass;
+use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
+use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+use Symfony\Bundle\TwigBundle\TwigBundle;
+use Symfony\Bundle\WebProfilerBundle\WebProfilerBundle;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
+use function dirname;
 
 /**
  * Decides a few things on the way to a page, so that the access control panel has something to show.
@@ -48,21 +51,32 @@ class AccessControlPanelKernel extends Kernel
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->import($this->profilerRoutes('profiler.php'))->prefix('/_profiler');
-        $routes->import($this->profilerRoutes('wdt.php'))->prefix('/_wdt');
-        $routes->add('_', '/')->controller('kernel::homepageController');
-        $routes->add('quiet', '/quiet')->controller('kernel::quietController');
-        $routes->add('all', '/composite/all')->controller('kernel::allController');
-        $routes->add('either', '/composite/either')->controller('kernel::eitherController');
-        $routes->add('when', '/composite/when')->controller('kernel::whenController');
+        $routes->import($this->profilerRoutes('profiler.php'))
+            ->prefix('/_profiler');
+        $routes->import($this->profilerRoutes('wdt.php'))
+            ->prefix('/_wdt');
+        $routes->add('_', '/')
+            ->controller('kernel::homepageController');
+        $routes->add('quiet', '/quiet')
+            ->controller('kernel::quietController');
+        $routes->add('all', '/composite/all')
+            ->controller('kernel::allController');
+        $routes->add('either', '/composite/either')
+            ->controller('kernel::eitherController');
+        $routes->add('when', '/composite/when')
+            ->controller('kernel::whenController');
     }
 
     protected function configureContainer(ContainerBuilder $container, LoaderInterface $loader): void
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'profiler' => ['only_exceptions' => false],
-            'router' => ['utf8' => true],
+            'profiler' => [
+                'only_exceptions' => false,
+            ],
+            'router' => [
+                'utf8' => true,
+            ],
         ]);
 
         $container->loadFromExtension('web_profiler', [
@@ -76,17 +90,17 @@ class AccessControlPanelKernel extends Kernel
 
     private function profilerRoutes(string $file): string
     {
-        return \dirname((new \ReflectionClass(WebProfilerBundle::class))->getFileName()).'/Resources/config/routing/'.$file;
+        return dirname(new ReflectionClass(WebProfilerBundle::class)->getFileName()) . '/Resources/config/routing/' . $file;
     }
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/cache-'.spl_object_hash($this);
+        return sys_get_temp_dir() . '/cache-' . spl_object_hash($this);
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/log-'.spl_object_hash($this);
+        return sys_get_temp_dir() . '/log-' . spl_object_hash($this);
     }
 
     protected function build(ContainerBuilder $container): void
@@ -104,7 +118,9 @@ class AccessControlPanelKernel extends Kernel
     {
         $accessControlManager->decide(new AccessRequest(null, static fn (): bool => true));
 
-        $accessControlManager->decide(new AccessRequest(null, 'ROLE_ADMIN', new \stdClass(), new AccessEnvironment(['ip' => '10.0.0.1'])));
+        $accessControlManager->decide(new AccessRequest(null, 'ROLE_ADMIN', new stdClass(), new AccessEnvironment([
+            'ip' => '10.0.0.1',
+        ])));
 
         return new Response('<html><head></head><body>Homepage Controller.</body></html>');
     }

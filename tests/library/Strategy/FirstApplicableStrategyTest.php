@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Strategy;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessDecision;
 use AccessControl\AccessOutcome;
@@ -12,6 +11,7 @@ use AccessControl\AccessRequest;
 use AccessControl\DecisionVote;
 use AccessControl\Strategy\FirstApplicableStrategy;
 use AccessControl\Tests\Fixtures\FixedOutcomeVoter;
+use PHPUnit\Framework\TestCase;
 
 final class FirstApplicableStrategyTest extends TestCase
 {
@@ -22,8 +22,8 @@ final class FirstApplicableStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied by the second voter.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertSame('The first voter that did not abstain granted access. Granted by the first voter.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame('The first voter that did not abstain granted access. Granted by the first voter.', $decision->reason);
     }
 
     public function testTheFirstDenialSettlesTheQuestion(): void
@@ -33,8 +33,8 @@ final class FirstApplicableStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::grant('Granted by the second voter.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertSame('The first voter that did not abstain denied access. Denied by the first voter.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame('The first voter that did not abstain denied access. Denied by the first voter.', $decision->reason);
     }
 
     /**
@@ -46,8 +46,8 @@ final class FirstApplicableStrategyTest extends TestCase
         $grant = new FixedOutcomeVoter(AccessOutcome::grant('Granted.'));
         $deny = new FixedOutcomeVoter(AccessOutcome::deny('Denied.'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->decide([$grant, $deny])->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $this->decide([$deny, $grant])->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->decide([$grant, $deny])->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $this->decide([$deny, $grant])->decision);
     }
 
     public function testAbstentionsAreSkipped(): void
@@ -58,7 +58,7 @@ final class FirstApplicableStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied by the third voter.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
     }
 
     public function testAllVotersAbstainingIsReportedAsSuch(): void
@@ -67,8 +67,8 @@ final class FirstApplicableStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::abstain('Not my business.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertSame('All voters abstained from voting. Not my business.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame('All voters abstained from voting. Not my business.', $decision->reason);
     }
 
     public function testAllVotersAbstainingCanBeGranted(): void
@@ -77,7 +77,7 @@ final class FirstApplicableStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::abstain('Not my business.')),
         ], true);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
     }
 
     /**

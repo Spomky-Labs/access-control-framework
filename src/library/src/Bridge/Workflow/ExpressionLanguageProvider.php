@@ -8,6 +8,8 @@ use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Workflow\Exception\RuntimeException;
+use function count;
+use function sprintf;
 
 /**
  * The one guard function that is not about access at all.
@@ -20,8 +22,6 @@ use Symfony\Component\Workflow\Exception\RuntimeException;
  * The validator is held rather than read from the evaluation variables, which is what lets the
  * expression voter be reused untouched: its variables are the ones an access rule sees, and this
  * function needs none of them.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -37,8 +37,8 @@ final readonly class ExpressionLanguageProvider implements ExpressionFunctionPro
         return [
             new ExpressionFunction(
                 'is_valid',
-                static fn ($subject = 'null', $groups = 'null') => \sprintf('0 === count($validator->validate(%s, null, %s))', $subject, $groups),
-                fn (array $variables, $subject = null, $groups = null) => 0 === \count($this->validator()->validate($subject, null, $groups)),
+                static fn ($subject = 'null', $groups = 'null') => sprintf('0 === count($validator->validate(%s, null, %s))', $subject, $groups),
+                fn (array $variables, $subject = null, $groups = null) => count($this->validator()->validate($subject, null, $groups)) === 0,
             ),
         ];
     }

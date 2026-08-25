@@ -12,10 +12,9 @@ use AccessControl\AccessPolicyEvaluator;
 use AccessControl\AccessRequest;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\AccessPolicyInterface;
+use function assert;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AccessPolicyHandler implements AccessPolicyHandlerInterface
@@ -32,7 +31,7 @@ final readonly class AccessPolicyHandler implements AccessPolicyHandlerInterface
 
     public function handle(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context, AccessPolicyEvaluator $evaluator): AccessOutcome
     {
-        \assert($accessPolicy instanceof AccessPolicy);
+        assert($accessPolicy instanceof AccessPolicy);
 
         $accessRequest = new AccessRequest(
             $context->requester,

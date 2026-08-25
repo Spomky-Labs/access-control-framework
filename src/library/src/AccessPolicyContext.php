@@ -6,10 +6,11 @@ namespace AccessControl;
 
 use AccessControl\Attribute\Argument;
 use AccessControl\Exception\UnknownArgumentException;
+use function array_key_exists;
+use function is_array;
+use function sprintf;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AccessPolicyContext
@@ -34,16 +35,16 @@ final readonly class AccessPolicyContext
      */
     public function resolve(mixed $value): mixed
     {
-        if (\is_array($value)) {
+        if (is_array($value)) {
             return array_map($this->resolve(...), $value);
         }
 
-        if (!$value instanceof Argument) {
+        if (! $value instanceof Argument) {
             return $value;
         }
 
-        if (!\array_key_exists($value->name, $this->arguments)) {
-            throw new UnknownArgumentException(\sprintf('Could not resolve the "%s" argument. Available arguments are: "%s".', $value->name, implode('", "', array_keys($this->arguments))));
+        if (! array_key_exists($value->name, $this->arguments)) {
+            throw new UnknownArgumentException(sprintf('Could not resolve the "%s" argument. Available arguments are: "%s".', $value->name, implode('", "', array_keys($this->arguments))));
         }
 
         return $this->arguments[$value->name];

@@ -7,6 +7,7 @@ namespace AccessControl\Tests\Fixtures;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
+use function in_array;
 
 final readonly class FixedOutcomeVoter implements VoterInterface
 {
@@ -26,7 +27,7 @@ final readonly class FixedOutcomeVoter implements VoterInterface
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return [] === $this->supportedAttributes || \in_array($attribute, $this->supportedAttributes, true);
+        return $this->supportedAttributes === [] || in_array($attribute, $this->supportedAttributes, true);
     }
 
     public function supportsSubject(mixed $subject): bool

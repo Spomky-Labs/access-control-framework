@@ -10,10 +10,9 @@ use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
 use AccessControl\Attribute\All;
 use AccessControl\DecisionVote;
+use function assert;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AllHandler implements AccessPolicyHandlerInterface
@@ -25,23 +24,23 @@ final readonly class AllHandler implements AccessPolicyHandlerInterface
 
     public function handle(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context, AccessPolicyEvaluator $evaluator): AccessOutcome
     {
-        \assert($accessPolicy instanceof All);
+        assert($accessPolicy instanceof All);
 
         $granted = 0;
 
         foreach ($accessPolicy->accessPolicies as $nested) {
             $outcome = $evaluator->evaluate($nested, $context);
 
-            if (DecisionVote::ACCESS_DENIED === $outcome->decision) {
+            if ($outcome->decision === DecisionVote::ACCESS_DENIED) {
                 return $outcome;
             }
 
-            if (DecisionVote::ACCESS_GRANTED === $outcome->decision) {
+            if ($outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 ++$granted;
             }
         }
 
-        if (0 === $granted) {
+        if ($granted === 0) {
             return AccessOutcome::abstain('No nested access policy applied.');
         }
 

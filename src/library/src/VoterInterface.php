@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AccessControl;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 interface VoterInterface

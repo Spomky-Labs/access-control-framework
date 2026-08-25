@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Strategy;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use AccessControl\AccessRequest;
 use AccessControl\DecisionVote;
 use AccessControl\Tests\Fixtures\FakeToken;
 use AccessControl\Tests\Fixtures\FakeUser;
 use AccessControl\Tests\Fixtures\FakeUserWithRole;
 use AccessControl\Tests\StrategyTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Security\Core\Authentication\Token\NullToken;
 
@@ -23,8 +23,8 @@ final class PermitOverridesStrategyTest extends StrategyTestCase
 
         $decision = $accessControlManger->decide($accessRequest, 'permit_overrides');
 
-        $this->assertEquals($expectedDecision, $decision->decision);
-        $this->assertEquals($reason, $decision->reason);
+        static::assertEquals($expectedDecision, $decision->decision);
+        static::assertEquals($reason, $decision->reason);
     }
 
     /**

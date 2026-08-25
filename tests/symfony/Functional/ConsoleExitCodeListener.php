@@ -19,7 +19,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 #[AsEventListener(ConsoleEvents::ERROR)]
 final class ConsoleExitCodeListener
 {
-    public const EXIT_CODE = 77;
+    public const int EXIT_CODE = 77;
 
     public function __invoke(ConsoleErrorEvent $event): void
     {

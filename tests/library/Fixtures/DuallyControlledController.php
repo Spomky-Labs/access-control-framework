@@ -79,8 +79,12 @@ class DuallyControlledController
     {
     }
 
-    #[IsGranted(new Expression('subject["post"].title == "Hello"'), ['post' => 'post'])]
-    #[AccessPolicy(new Expression('subject["post"].title == "Hello"'), ['post' => new Argument('post')])]
+    #[IsGranted(new Expression('subject["post"].title == "Hello"'), [
+        'post' => 'post',
+    ])]
+    #[AccessPolicy(new Expression('subject["post"].title == "Hello"'), [
+        'post' => new Argument('post'),
+    ])]
     public function mapOfNamedSubjects(Post $post): void
     {
     }
@@ -91,8 +95,12 @@ class DuallyControlledController
     {
     }
 
-    #[IsGranted(new Expression('subject["post"].title == "Hello"'), ['post' => new Expression('args["post"]')])]
-    #[AccessPolicy(new Expression('subject["post"].title == "Hello"'), ['post' => new Argument('post')])]
+    #[IsGranted(new Expression('subject["post"].title == "Hello"'), [
+        'post' => new Expression('args["post"]'),
+    ])]
+    #[AccessPolicy(new Expression('subject["post"].title == "Hello"'), [
+        'post' => new Argument('post'),
+    ])]
     public function mapOfSubjectsFromExpressions(Post $post): void
     {
     }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AccessControl\Exception;
 
+use Throwable;
+
 /**
  * Marks an exception as an access denial, whichever component threw it.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
-interface AccessDeniedExceptionInterface extends \Throwable
+interface AccessDeniedExceptionInterface extends Throwable
 {
 }

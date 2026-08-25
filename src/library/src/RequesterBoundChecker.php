@@ -16,8 +16,6 @@ use AccessControl\Requester\RequesterProviderInterface;
  * resolved the requester itself would be a poorer AccessControlManager, and there is no need
  * for two of those.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class RequesterBoundChecker
@@ -31,7 +29,8 @@ final readonly class RequesterBoundChecker
 
     public function isGranted(mixed $attribute, mixed $subject = null): bool
     {
-        return DecisionVote::ACCESS_GRANTED === $this->decide($attribute, $subject)->decision;
+        return $this->decide($attribute, $subject)
+            ->decision === DecisionVote::ACCESS_GRANTED;
     }
 
     /**

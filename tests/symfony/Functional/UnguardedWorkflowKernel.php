@@ -41,12 +41,17 @@ class UnguardedWorkflowKernel extends Kernel
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
             'workflows' => [
                 'article' => [
                     'type' => 'state_machine',
-                    'marking_store' => ['type' => 'method', 'property' => 'marking'],
+                    'marking_store' => [
+                        'type' => 'method',
+                        'property' => 'marking',
+                    ],
                     'supports' => [Article::class],
                     'initial_marking' => 'draft',
                     'places' => ['draft', 'published'],
@@ -64,12 +69,12 @@ class UnguardedWorkflowKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-workflow/unguarded';
+        return sys_get_temp_dir() . '/access-control-bundle-workflow/unguarded';
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-workflow/log';
+        return sys_get_temp_dir() . '/access-control-bundle-workflow/log';
     }
 
     protected function build(ContainerBuilder $container): void

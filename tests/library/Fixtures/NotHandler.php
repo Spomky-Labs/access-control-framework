@@ -10,6 +10,7 @@ use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
 use AccessControl\DecisionVote;
 use AccessControl\Handler\AccessPolicyHandlerInterface;
+use function assert;
 
 final readonly class NotHandler implements AccessPolicyHandlerInterface
 {
@@ -20,12 +21,12 @@ final readonly class NotHandler implements AccessPolicyHandlerInterface
 
     public function handle(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context, AccessPolicyEvaluator $evaluator): AccessOutcome
     {
-        \assert($accessPolicy instanceof Not);
+        assert($accessPolicy instanceof Not);
 
         foreach ($accessPolicy->accessPolicies as $nested) {
             $outcome = $evaluator->evaluate($nested, $context);
 
-            if (DecisionVote::ACCESS_GRANTED === $outcome->decision) {
+            if ($outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 return AccessOutcome::deny('A negated access policy granted access.');
             }
         }

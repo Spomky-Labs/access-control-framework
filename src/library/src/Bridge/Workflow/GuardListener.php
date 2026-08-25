@@ -30,8 +30,6 @@ use Symfony\Component\Workflow\TransitionBlocker;
  * strategy, so a permissive application voter could grant a transition whose expression is false.
  * A guard blocks unless its own expression holds, which is what Workflow means by the word.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class GuardListener
@@ -48,7 +46,7 @@ final readonly class GuardListener
 
     public function onTransition(GuardEvent $event, string $eventName): void
     {
-        if (!isset($this->configuration[$eventName])) {
+        if (! isset($this->configuration[$eventName])) {
             return;
         }
 
@@ -73,7 +71,7 @@ final readonly class GuardListener
             $event->getSubject(),
         );
 
-        if (DecisionVote::ACCESS_GRANTED === $this->expressionVoter->vote($accessRequest)->decision) {
+        if ($this->expressionVoter->vote($accessRequest)->decision === DecisionVote::ACCESS_GRANTED) {
             return;
         }
 

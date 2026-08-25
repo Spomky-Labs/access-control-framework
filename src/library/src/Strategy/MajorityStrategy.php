@@ -23,8 +23,6 @@ use AccessControl\DecisionVote;
  * This is the "consensus" strategy of the Security component, which counts votes rather than
  * weighing them. XACML defines no such combining algorithm.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class MajorityStrategy implements StrategyInterface
@@ -49,10 +47,10 @@ final readonly class MajorityStrategy implements StrategyInterface
         $expressed = 0;
 
         foreach ($votes as $vote) {
-            if (DecisionVote::ACCESS_GRANTED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 $grantWeight += $vote->outcome->weight;
                 ++$expressed;
-            } elseif (DecisionVote::ACCESS_DENIED === $vote->outcome->decision) {
+            } elseif ($vote->outcome->decision === DecisionVote::ACCESS_DENIED) {
                 $denyWeight += $vote->outcome->weight;
                 ++$expressed;
             }
@@ -66,7 +64,7 @@ final readonly class MajorityStrategy implements StrategyInterface
             return AccessDecision::grant($accessRequest, $votes, 'The grants weigh more than the denials.');
         }
 
-        if (0 === $expressed) {
+        if ($expressed === 0) {
             return AccessDecision::abstain($accessRequest, $votes, 'All voters abstained from voting.');
         }
 

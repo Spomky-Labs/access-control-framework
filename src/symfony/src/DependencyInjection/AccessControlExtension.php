@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Bundle\DependencyInjection;
 
-use Symfony\Bundle\SecurityBundle\SecurityBundle;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\Argument;
 use AccessControl\Attribute\AtLeastOneOf;
@@ -13,6 +12,8 @@ use AccessControl\Handler\AccessPolicyHandlerInterface;
 use AccessControl\Http\AccessRule;
 use AccessControl\Strategy\StrategyInterface;
 use AccessControl\VoterInterface;
+use LogicException;
+use Symfony\Bundle\SecurityBundle\SecurityBundle;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Console\ConsoleEvents;
@@ -32,10 +33,15 @@ use Symfony\Component\HttpFoundation\RequestMatcher\PortRequestMatcher;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Workflow\Event\GuardEvent;
 use Twig\Environment;
+use function array_key_exists;
+use function count;
+use function sprintf;
+use const FILTER_FLAG_IPV4;
+use const FILTER_FLAG_IPV6;
+use const FILTER_VALIDATE_IP;
+use const PREG_SPLIT_NO_EMPTY;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 class AccessControlExtension extends Extension
@@ -87,16 +93,16 @@ class AccessControlExtension extends Extension
         $container->registerForAutoconfiguration(AccessPolicyHandlerInterface::class)
             ->addTag('access_control.policy_handler');
 
-        $loader = new PhpFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('access_control.php');
         $loader->load('debug.php');
 
         $container->setParameter('access_control.default_strategy', $config['default_strategy']);
         $container->setParameter('access_control.allow_if_all_abstain', $config['allow_if_all_abstain']);
         $container->setParameter('access_control.allow_if_equal_granted_denied', $config['allow_if_equal_granted_denied']);
-        $container->setParameter('.access_control.strategy_configured', $this->wasConfigured($configs, 'default_strategy'));
-        $container->setParameter('.access_control.equal_granted_denied_configured', $this->wasConfigured($configs, 'allow_if_equal_granted_denied'));
-        $container->setParameter('.access_control.all_abstain_configured', $this->wasConfigured($configs, 'allow_if_all_abstain'));
+        $container->setParameter('.access_control.strategy_configured', self::wasConfigured($configs, 'default_strategy'));
+        $container->setParameter('.access_control.equal_granted_denied_configured', self::wasConfigured($configs, 'allow_if_equal_granted_denied'));
+        $container->setParameter('.access_control.all_abstain_configured', self::wasConfigured($configs, 'allow_if_all_abstain'));
         $container->setParameter('.access_control.default_strategy_alias', null);
         $container->setParameter('.access_control.integration', [
             'security_bundle' => false,
@@ -143,7 +149,7 @@ class AccessControlExtension extends Extension
      */
     private function createRules(array $rules, ContainerBuilder $container, PhpFileLoader $loader): void
     {
-        if (!$rules) {
+        if (! $rules) {
             return;
         }
 
@@ -153,7 +159,7 @@ class AccessControlExtension extends Extension
         $requiresChannel = false;
 
         foreach ($rules as $rule) {
-            if (0 === \count(array_filter($rule))) {
+            if (count(array_filter($rule)) === 0) {
                 throw new InvalidConfigurationException('One or more access control rules are empty. Did you accidentally add lines only containing a "-" under "access_control.rules"?');
             }
 
@@ -163,19 +169,20 @@ class AccessControlExtension extends Extension
                 $rule['requires_channel'],
             ]);
 
-            $requiresChannel = $requiresChannel || null !== $rule['requires_channel'];
+            $requiresChannel = $requiresChannel || $rule['requires_channel'] !== null;
         }
 
-        $container->getDefinition('access_control.rule_map')->replaceArgument(0, $definitions);
+        $container->getDefinition('access_control.rule_map')
+            ->replaceArgument(0, $definitions);
 
-        if (!$requiresChannel) {
+        if (! $requiresChannel) {
             $container->removeDefinition('access_control.listener.channel');
         }
     }
 
     private function createRuleMatcher(array $rule, ContainerBuilder $container): Definition|Reference
     {
-        if (null !== $rule['request_matcher']) {
+        if ($rule['request_matcher'] !== null) {
             if ($rule['path'] || $rule['host'] || $rule['port'] || $rule['ips'] || $rule['methods'] || $rule['attributes'] || $rule['route']) {
                 throw new InvalidConfigurationException('The "request_matcher" option should not be specified alongside other options. Consider integrating your constraints inside your RequestMatcher directly.');
             }
@@ -185,8 +192,8 @@ class AccessControlExtension extends Extension
 
         $attributes = $rule['attributes'];
 
-        if (null !== $rule['route']) {
-            if (\array_key_exists('_route', $attributes)) {
+        if ($rule['route'] !== null) {
+            if (array_key_exists('_route', $attributes)) {
                 throw new InvalidConfigurationException('The "route" option should not be specified alongside "attributes._route" option. Use just one of the options.');
             }
 
@@ -199,11 +206,11 @@ class AccessControlExtension extends Extension
             $matchers[] = new Definition(MethodRequestMatcher::class, [array_map(strtoupper(...), $rule['methods'])]);
         }
 
-        if (null !== $rule['path']) {
+        if ($rule['path'] !== null) {
             $matchers[] = new Definition(PathRequestMatcher::class, [$rule['path']]);
         }
 
-        if (null !== $rule['host']) {
+        if ($rule['host'] !== null) {
             $matchers[] = new Definition(HostRequestMatcher::class, [$rule['host']]);
         }
 
@@ -211,8 +218,8 @@ class AccessControlExtension extends Extension
             foreach ($rule['ips'] as $ip) {
                 $container->resolveEnvPlaceholders($ip, null, $usedEnvs);
 
-                if (!$usedEnvs && !self::isValidIps($ip)) {
-                    throw new \LogicException(\sprintf('The given value "%s" in the "access_control.rules" config option is not a valid IP address.', $ip));
+                if (! $usedEnvs && ! self::isValidIps($ip)) {
+                    throw new LogicException(sprintf('The given value "%s" in the "access_control.rules" config option is not a valid IP address.', $ip));
                 }
 
                 $usedEnvs = null;
@@ -225,7 +232,7 @@ class AccessControlExtension extends Extension
             $matchers[] = new Definition(AttributesRequestMatcher::class, [$attributes]);
         }
 
-        if (null !== $rule['port']) {
+        if ($rule['port'] !== null) {
             $matchers[] = new Definition(PortRequestMatcher::class, [$rule['port']]);
         }
 
@@ -245,9 +252,9 @@ class AccessControlExtension extends Extension
             $accessPolicies[] = new Definition(AccessPolicy::class, [$role, new Definition(Argument::class, ['request'])]);
         }
 
-        if (null !== $rule['allow_if']) {
-            if (!class_exists(Expression::class)) {
-                throw new \LogicException('Using the "allow_if" option in "access_control.rules" requires the Expression Language component. Try running "composer require symfony/expression-language".');
+        if ($rule['allow_if'] !== null) {
+            if (! class_exists(Expression::class)) {
+                throw new LogicException('Using the "allow_if" option in "access_control.rules" requires the Expression Language component. Try running "composer require symfony/expression-language".');
             }
 
             $accessPolicies[] = new Definition(AccessPolicy::class, [
@@ -256,7 +263,7 @@ class AccessControlExtension extends Extension
             ]);
         }
 
-        return match (\count($accessPolicies)) {
+        return match (count($accessPolicies)) {
             0 => null,
             1 => $accessPolicies[0],
             default => new Definition(AtLeastOneOf::class, [$accessPolicies]),
@@ -265,41 +272,34 @@ class AccessControlExtension extends Extension
 
     private static function isValidIps(string $ips): bool
     {
-        $ips = preg_split('/\s*,\s*/', $ips, -1, \PREG_SPLIT_NO_EMPTY);
+        $ips = preg_split('/\s*,\s*/', $ips, -1, PREG_SPLIT_NO_EMPTY);
 
-        if (!$ips) {
+        if (! $ips) {
             return false;
         }
-
-        foreach ($ips as $cidr) {
-            if (!self::isValidIp($cidr)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($ips, fn ($cidr) => self::isValidIp($cidr));
     }
 
     private static function isValidIp(string $cidr): bool
     {
         $cidrParts = explode('/', $cidr);
 
-        if (1 === \count($cidrParts)) {
-            return false !== filter_var($cidrParts[0], \FILTER_VALIDATE_IP);
+        if (count($cidrParts) === 1) {
+            return filter_var($cidrParts[0], FILTER_VALIDATE_IP) !== false;
         }
 
         $ip = $cidrParts[0];
         $netmask = $cidrParts[1];
 
-        if (!ctype_digit($netmask)) {
+        if (! ctype_digit($netmask)) {
             return false;
         }
 
-        if (filter_var($ip, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4)) {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             return $netmask <= 32;
         }
 
-        if (filter_var($ip, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV6)) {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             return $netmask <= 128;
         }
 
@@ -314,12 +314,6 @@ class AccessControlExtension extends Extension
      */
     private static function wasConfigured(array $configs, string $key): bool
     {
-        foreach ($configs as $config) {
-            if (isset($config[$key])) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($configs, fn ($config) => isset($config[$key]));
     }
 }

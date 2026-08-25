@@ -11,8 +11,6 @@ namespace AccessControl\Voter\RBAC;
  * keeps the very same reachable roles. The duplication is deliberate and temporary: the component
  * cannot depend on a service of SecurityBundle for a notion that is leaving Security.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 class RoleHierarchy implements RoleHierarchyInterface
@@ -104,7 +102,7 @@ class RoleHierarchy implements RoleHierarchyInterface
             $reachable[$current] = $current;
 
             foreach ($this->hierarchy[$current] ?? [] as $inherited) {
-                if (!isset($reachable[$inherited])) {
+                if (! isset($reachable[$inherited])) {
                     $queue[] = $inherited;
                 }
             }

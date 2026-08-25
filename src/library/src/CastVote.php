@@ -16,8 +16,6 @@ namespace AccessControl;
  * alone cannot: two voters may refuse for the same reason, and a template or a test wanting to name
  * the culprit had no way to.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class CastVote

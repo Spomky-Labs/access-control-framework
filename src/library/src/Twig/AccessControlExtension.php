@@ -9,8 +9,12 @@ use AccessControl\AccessDecision;
 use AccessControl\AccessRequest;
 use AccessControl\RequesterBoundChecker;
 use AccessControl\Voter\ABAC\AuthenticationState;
+use InvalidArgumentException;
+use LogicException;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
+use function is_string;
+use function sprintf;
 
 /**
  * Asks the access control questions a template may ask, in an application that has no Security.
@@ -22,8 +26,6 @@ use Twig\TwigFunction;
  * Field level access control is the one thing not carried across. It goes through symfony/acl,
  * whose FieldVote no voter of this component understands, so a field is refused loudly rather than
  * quietly denied.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -56,7 +58,8 @@ final class AccessControlExtension extends AbstractExtension
     {
         self::rejectField($field, 'is_granted_for_user');
 
-        return $this->decisionForUser($user, $attribute, $subject)->isGranted();
+        return $this->decisionForUser($user, $attribute, $subject)
+            ->isGranted();
     }
 
     /**
@@ -77,10 +80,10 @@ final class AccessControlExtension extends AbstractExtension
 
     public function decisionForUser(mixed $user, mixed $attribute, mixed $subject = null): AccessDecision
     {
-        $state = \is_string($attribute) ? AuthenticationState::fromValue($attribute) : null;
+        $state = is_string($attribute) ? AuthenticationState::fromValue($attribute) : null;
 
-        if (null !== $state && AuthenticationState::PUBLIC_ACCESS !== $state) {
-            throw new \InvalidArgumentException(\sprintf('Cannot decide on the "%s" authentication state for a requester other than the current one.', $attribute));
+        if ($state !== null && $state !== AuthenticationState::PUBLIC_ACCESS) {
+            throw new InvalidArgumentException(sprintf('Cannot decide on the "%s" authentication state for a requester other than the current one.', $attribute));
         }
 
         return $this->accessControlManager->decide(new AccessRequest($user, $attribute, $subject));
@@ -102,8 +105,8 @@ final class AccessControlExtension extends AbstractExtension
      */
     private static function rejectField(?string $field, string $function): void
     {
-        if (null !== $field) {
-            throw new \LogicException(\sprintf('Passing a $field to the "%s()" function is field level access control, which goes through symfony/acl and is not carried over by the AccessControl component.', $function));
+        if ($field !== null) {
+            throw new LogicException(sprintf('Passing a $field to the "%s()" function is field level access control, which goes through symfony/acl and is not carried over by the AccessControl component.', $function));
         }
     }
 }

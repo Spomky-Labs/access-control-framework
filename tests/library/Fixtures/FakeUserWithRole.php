@@ -15,10 +15,6 @@ final readonly class FakeUserWithRole implements UserInterface, UserWithRoleInte
     ) {
     }
 
-    public function eraseCredentials(): void
-    {
-    }
-
     public function getUserIdentifier(): string
     {
         return $this->username;

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\Bridge\Security\AccessDecisionManagerAdapter;
 use AccessControl\Bridge\Security\VoterAdapter;
@@ -20,6 +18,8 @@ use AccessControl\Voter\ABAC\AuthenticatedVoter;
 use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\AccessDecision;
@@ -29,6 +29,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\AuthenticatedVoter as Se
 use Symfony\Component\Security\Core\Authorization\Voter\RoleHierarchyVoter as SecurityRoleHierarchyVoter;
 use Symfony\Component\Security\Core\Exception\InvalidArgumentException as SecurityInvalidArgumentException;
 use Symfony\Component\Security\Core\Role\RoleHierarchy as SecurityRoleHierarchy;
+use function sprintf;
 
 /**
  * The decision contract of Security, answered by the component, on the very same questions.
@@ -40,7 +41,9 @@ use Symfony\Component\Security\Core\Role\RoleHierarchy as SecurityRoleHierarchy;
  */
 final class AccessDecisionManagerParityTest extends TestCase
 {
-    private const HIERARCHY = ['ROLE_ADMIN' => ['ROLE_USER']];
+    private const array HIERARCHY = [
+        'ROLE_ADMIN' => ['ROLE_USER'],
+    ];
 
     public static function provideAttributeLists(): iterable
     {
@@ -70,10 +73,12 @@ final class AccessDecisionManagerParityTest extends TestCase
     {
         $token = $this->token();
 
-        $this->assertSame(
-            $this->security()->decide($token, $attributes, null, null, true),
-            $this->accessControl()->decide($token, $attributes, null, null, true),
-            \sprintf('The two stacks disagree on [%s].', implode(', ', $attributes)),
+        static::assertSame(
+            $this->security()
+                ->decide($token, $attributes, null, null, true),
+            $this->accessControl()
+                ->decide($token, $attributes, null, null, true),
+            sprintf('The two stacks disagree on [%s].', implode(', ', $attributes)),
         );
     }
 
@@ -85,7 +90,8 @@ final class AccessDecisionManagerParityTest extends TestCase
     {
         $this->expectException(SecurityInvalidArgumentException::class);
 
-        $this->security()->decide($this->token(), ['ROLE_ADMIN', 'ROLE_USER']);
+        $this->security()
+            ->decide($this->token(), ['ROLE_ADMIN', 'ROLE_USER']);
     }
 
     public function testASubjectIsCarriedThrough()
@@ -93,9 +99,11 @@ final class AccessDecisionManagerParityTest extends TestCase
         $token = $this->token();
         $post = new Post('Hello');
 
-        $this->assertSame(
-            $this->security()->decide($token, ['read'], $post),
-            $this->accessControl()->decide($token, ['read'], $post),
+        static::assertSame(
+            $this->security()
+                ->decide($token, ['read'], $post),
+            $this->accessControl()
+                ->decide($token, ['read'], $post),
         );
     }
 
@@ -107,11 +115,12 @@ final class AccessDecisionManagerParityTest extends TestCase
     {
         $decision = new AccessDecision();
 
-        $this->accessControl()->decide($this->token(), ['ROLE_SUPER_ADMIN'], null, $decision);
+        $this->accessControl()
+            ->decide($this->token(), ['ROLE_SUPER_ADMIN'], null, $decision);
 
-        $this->assertFalse($decision->isGranted);
-        $this->assertStringStartsWith('Access Denied.', $decision->getMessage());
-        $this->assertNotEmpty($decision->votes);
+        static::assertFalse($decision->isGranted);
+        static::assertStringStartsWith('Access Denied.', $decision->getMessage());
+        static::assertNotEmpty($decision->votes);
     }
 
     /**
@@ -125,14 +134,16 @@ final class AccessDecisionManagerParityTest extends TestCase
     public function testTheDecisionSaysWhoVoted()
     {
         $decision = new AccessDecision();
-        $this->accessControl()->decide($this->token(), ['ROLE_ADMIN'], null, $decision);
+        $this->accessControl()
+            ->decide($this->token(), ['ROLE_ADMIN'], null, $decision);
 
-        $this->assertSame([RoleVoter::class], array_map(static fn ($vote) => $vote->voter, $decision->votes));
+        static::assertSame([RoleVoter::class], array_map(static fn ($vote) => $vote->voter, $decision->votes));
 
         $subject = new AccessDecision();
-        $this->accessControl()->decide($this->token(), ['read'], new Post('Hello'), $subject);
+        $this->accessControl()
+            ->decide($this->token(), ['read'], new Post('Hello'), $subject);
 
-        $this->assertSame([PostVoter::class], array_map(static fn ($vote) => $vote->voter, $subject->votes));
+        static::assertSame([PostVoter::class], array_map(static fn ($vote) => $vote->voter, $subject->votes));
     }
 
     /**
@@ -145,9 +156,10 @@ final class AccessDecisionManagerParityTest extends TestCase
         $manager = new AccessControlManager([new PermitOverridesStrategy()], [new VoterAdapter(new SecurityPostVoter())]);
         $decision = new AccessDecision();
 
-        (new AccessDecisionManagerAdapter($manager))->decide($this->token(), ['read'], new Post('Hello'), $decision);
+        new AccessDecisionManagerAdapter($manager)
+            ->decide($this->token(), ['read'], new Post('Hello'), $decision);
 
-        $this->assertSame([SecurityPostVoter::class], array_map(static fn ($vote) => $vote->voter, $decision->votes));
+        static::assertSame([SecurityPostVoter::class], array_map(static fn ($vote) => $vote->voter, $decision->votes));
     }
 
     /**
@@ -158,9 +170,10 @@ final class AccessDecisionManagerParityTest extends TestCase
     {
         $decision = new AccessDecision();
 
-        $granted = $this->accessControl()->decide($this->token(), ['ROLE_ADMIN'], null, $decision, true);
+        $granted = $this->accessControl()
+            ->decide($this->token(), ['ROLE_ADMIN'], null, $decision, true);
 
-        $this->assertTrue($granted);
+        static::assertTrue($granted);
     }
 
     private function token(): TokenInterface

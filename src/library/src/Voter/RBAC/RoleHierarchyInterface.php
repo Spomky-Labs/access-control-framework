@@ -17,8 +17,6 @@ namespace AccessControl\Voter\RBAC;
  * every implementation, which DebugClassLoader enforces and which was measured on this component's
  * own adapter. No voter asks the question, so no implementation is put on notice for it.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 interface RoleHierarchyInterface

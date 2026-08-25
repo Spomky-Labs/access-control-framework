@@ -6,6 +6,7 @@ namespace AccessControl\Bundle\Controller;
 
 use AccessControl\Exception\AccessDeniedException;
 use AccessControl\RequesterBoundChecker;
+use function func_get_args;
 
 /**
  * Gives the access control helpers to a controller whose base class does not have them.
@@ -21,8 +22,6 @@ use AccessControl\RequesterBoundChecker;
  *         use AccessControlTrait;
  *     }
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 trait AccessControlTrait
@@ -31,7 +30,9 @@ trait AccessControlTrait
     {
         $parent = get_parent_class(static::class);
 
-        return ['access_control.checker' => '?'.RequesterBoundChecker::class]
+        return [
+            'access_control.checker' => '?' . RequesterBoundChecker::class,
+        ]
             + ($parent ? $parent::getSubscribedServices() : []);
     }
 
@@ -44,10 +45,12 @@ trait AccessControlTrait
     protected function isGranted(mixed $attribute, mixed $subject = null): bool
     {
         if ($this->container->has('security.authorization_checker')) {
-            return $this->container->get('security.authorization_checker')->isGranted($attribute, $subject);
+            return $this->container->get('security.authorization_checker')
+                ->isGranted($attribute, $subject);
         }
 
-        return $this->container->get('access_control.checker')->isGranted($attribute, $subject);
+        return $this->container->get('access_control.checker')
+            ->isGranted($attribute, $subject);
     }
 
     /**
@@ -61,12 +64,12 @@ trait AccessControlTrait
     protected function denyAccessUnlessGranted(mixed $attribute, mixed $subject = null, string $message = 'Access Denied.'): void
     {
         if ($this->container->has('security.authorization_checker')) {
-            parent::denyAccessUnlessGranted(...\func_get_args());
+            parent::denyAccessUnlessGranted(...func_get_args());
 
             return;
         }
 
-        if (!$this->isGranted($attribute, $subject)) {
+        if (! $this->isGranted($attribute, $subject)) {
             throw new AccessDeniedException($message);
         }
     }

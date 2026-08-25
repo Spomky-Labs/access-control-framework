@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Listener;
 
-use Psr\Log\LoggerInterface;
 use AccessControl\Http\AccessRuleMapInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,8 +19,6 @@ use Symfony\Component\HttpKernel\KernelEvents;
  * The channel travels with the rule because it is what a rule requires of the request, next to what
  * it requires of the requester. Enforcing it is not an access decision though, so no voter is
  * consulted and nothing reaches the decision log.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -48,14 +46,14 @@ final readonly class ChannelListener implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (! $event->isMainRequest()) {
             return;
         }
 
         $request = $event->getRequest();
         $channel = $this->accessRuleMap->getRule($request)?->channel;
 
-        if ('https' === $channel && !$request->isSecure()) {
+        if ($channel === 'https' && ! $request->isSecure()) {
             $this->logRedirectionToHttps($request);
 
             $event->setResponse($this->createRedirectResponse($request));
@@ -63,7 +61,7 @@ final readonly class ChannelListener implements EventSubscriberInterface
             return;
         }
 
-        if ('http' === $channel && $request->isSecure()) {
+        if ($channel === 'http' && $request->isSecure()) {
             $this->logger?->info('Redirecting to HTTP.');
 
             $event->setResponse($this->createRedirectResponse($request));
@@ -72,11 +70,11 @@ final readonly class ChannelListener implements EventSubscriberInterface
 
     private function logRedirectionToHttps(Request $request): void
     {
-        if (null === $this->logger) {
+        if ($this->logger === null) {
             return;
         }
 
-        if ('https' === $request->headers->get('X-Forwarded-Proto')) {
+        if ($request->headers->get('X-Forwarded-Proto') === 'https') {
             $this->logger->info('Redirecting to HTTPS. ("X-Forwarded-Proto" header is set to "https" - did you set "trusted_proxies" correctly?)');
         } elseif (str_contains($request->headers->get('Forwarded', ''), 'proto=https')) {
             $this->logger->info('Redirecting to HTTPS. ("Forwarded" header is set to "proto=https" - did you set "trusted_proxies" correctly?)');
@@ -89,20 +87,20 @@ final readonly class ChannelListener implements EventSubscriberInterface
     {
         $scheme = $request->isSecure() ? 'http' : 'https';
 
-        if ('http' === $scheme && 80 !== $this->httpPort) {
-            $port = ':'.$this->httpPort;
-        } elseif ('https' === $scheme && 443 !== $this->httpsPort) {
-            $port = ':'.$this->httpsPort;
+        if ($scheme === 'http' && $this->httpPort !== 80) {
+            $port = ':' . $this->httpPort;
+        } elseif ($scheme === 'https' && $this->httpsPort !== 443) {
+            $port = ':' . $this->httpsPort;
         } else {
             $port = '';
         }
 
         $qs = $request->getQueryString();
 
-        if (null !== $qs) {
-            $qs = '?'.$qs;
+        if ($qs !== null) {
+            $qs = '?' . $qs;
         }
 
-        return new RedirectResponse($scheme.'://'.$request->getHost().$port.$request->getBaseUrl().$request->getPathInfo().$qs, 301);
+        return new RedirectResponse($scheme . '://' . $request->getHost() . $port . $request->getBaseUrl() . $request->getPathInfo() . $qs, 301);
     }
 }

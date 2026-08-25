@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Http;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Http\AccessRule;
 use AccessControl\Http\AccessRuleMap;
+use ArrayIterator;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\ChainRequestMatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher\MethodRequestMatcher;
@@ -17,7 +18,7 @@ final class AccessRuleMapTest extends TestCase
 {
     public function testAnEmptyMapMatchesNothing()
     {
-        $this->assertNull((new AccessRuleMap())->getRule(Request::create('/admin')));
+        static::assertNull(new AccessRuleMap()->getRule(Request::create('/admin')));
     }
 
     public function testTheFirstMatchingRuleWins()
@@ -27,8 +28,8 @@ final class AccessRuleMapTest extends TestCase
 
         $map = new AccessRuleMap([$strict, $loose]);
 
-        $this->assertSame($strict, $map->getRule(Request::create('/admin/users')));
-        $this->assertSame($loose, $map->getRule(Request::create('/')));
+        static::assertSame($strict, $map->getRule(Request::create('/admin/users')));
+        static::assertSame($loose, $map->getRule(Request::create('/')));
     }
 
     /**
@@ -40,8 +41,8 @@ final class AccessRuleMapTest extends TestCase
         $map = new AccessRuleMap([$loose = new AccessRule(new PathRequestMatcher('^/'))]);
         $map->add($strict = new AccessRule(new PathRequestMatcher('^/admin')));
 
-        $this->assertSame($loose, $map->getRule(Request::create('/admin')));
-        $this->assertNotSame($strict, $map->getRule(Request::create('/admin')));
+        static::assertSame($loose, $map->getRule(Request::create('/admin')));
+        static::assertNotSame($strict, $map->getRule(Request::create('/admin')));
     }
 
     public function testARuleThatDoesNotMatchIsSkipped()
@@ -51,15 +52,15 @@ final class AccessRuleMapTest extends TestCase
             $get = new AccessRule(new PathRequestMatcher('^/admin')),
         ]);
 
-        $this->assertSame($get, $map->getRule(Request::create('/admin', 'GET')));
+        static::assertSame($get, $map->getRule(Request::create('/admin', 'GET')));
     }
 
     public function testAMapAcceptsAnyTraversable()
     {
         $rule = new AccessRule(new PathRequestMatcher('^/'));
-        $map = new AccessRuleMap(new \ArrayIterator([$rule]));
+        $map = new AccessRuleMap(new ArrayIterator([$rule]));
 
-        $this->assertSame($rule, $map->getRule(Request::create('/')));
+        static::assertSame($rule, $map->getRule(Request::create('/')));
     }
 
     /**
@@ -71,7 +72,7 @@ final class AccessRuleMapTest extends TestCase
         $map = new AccessRuleMap([new AccessRule(new PathRequestMatcher('^/'), null, 'https')]);
         $rule = $map->getRule(Request::create('/'));
 
-        $this->assertNull($rule->accessPolicy);
-        $this->assertSame('https', $rule->channel);
+        static::assertNull($rule->accessPolicy);
+        static::assertSame('https', $rule->channel);
     }
 }

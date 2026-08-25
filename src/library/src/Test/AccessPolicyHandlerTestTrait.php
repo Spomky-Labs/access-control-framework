@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AccessControl\Test;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessPolicyContext;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
 use AccessControl\Handler\AccessPolicyHandlerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
+use function assert;
 
 /**
  * Exercises a policy handler, to be used in a PHPUnit test case.
@@ -22,8 +23,6 @@ use AccessControl\Handler\AccessPolicyHandlerInterface;
  *
  * A trait rather than a parent class, so the single inheritance slot of a test class stays free,
  * as for AccessDecisionStrategyTestTrait.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -41,7 +40,7 @@ trait AccessPolicyHandlerTestTrait
     #[DataProvider('provideSupportedPolicies')]
     final public function testItClaimsThePoliciesItHandles(AccessPolicyInterface $accessPolicy)
     {
-        $this->assertTrue($this->createHandler()->supports($accessPolicy), $accessPolicy::class.' should be claimed.');
+        $this->assertTrue($this->createHandler()->supports($accessPolicy), $accessPolicy::class . ' should be claimed.');
     }
 
     /**
@@ -55,7 +54,8 @@ trait AccessPolicyHandlerTestTrait
 
     final protected function evaluate(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context = new AccessPolicyContext()): AccessOutcome
     {
-        return $this->createEvaluator()->evaluate($accessPolicy, $context);
+        return $this->createEvaluator()
+            ->evaluate($accessPolicy, $context);
     }
 
     /**
@@ -66,7 +66,7 @@ trait AccessPolicyHandlerTestTrait
     {
         return new AccessPolicyEvaluator([
             $this->createHandler(),
-            new class implements AccessPolicyHandlerInterface {
+            new class() implements AccessPolicyHandlerInterface {
                 public function supports(AccessPolicyInterface $accessPolicy): bool
                 {
                     return $accessPolicy instanceof FixedOutcomeAccessPolicy;
@@ -74,7 +74,7 @@ trait AccessPolicyHandlerTestTrait
 
                 public function handle(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context, AccessPolicyEvaluator $evaluator): AccessOutcome
                 {
-                    \assert($accessPolicy instanceof FixedOutcomeAccessPolicy);
+                    assert($accessPolicy instanceof FixedOutcomeAccessPolicy);
 
                     return $accessPolicy->outcome;
                 }

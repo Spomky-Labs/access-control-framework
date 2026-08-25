@@ -8,6 +8,7 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\CacheableVoterInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
+use function in_array;
 
 /**
  * The Security counterpart of {@see PostVoter}, so that both stacks can answer the same question.
@@ -19,17 +20,17 @@ final class SecurityPostVoter implements VoterInterface, CacheableVoterInterface
 {
     public function supportsAttribute(string $attribute): bool
     {
-        return 'read' === $attribute;
+        return $attribute === 'read';
     }
 
     public function supportsType(string $subjectType): bool
     {
-        return Post::class === $subjectType;
+        return $subjectType === Post::class;
     }
 
     public function vote(TokenInterface $token, mixed $subject, array $attributes, ?Vote $vote = null): int
     {
-        if (!\in_array('read', $attributes, true) || !$subject instanceof Post) {
+        if (! in_array('read', $attributes, true) || ! $subject instanceof Post) {
             return self::ACCESS_ABSTAIN;
         }
 

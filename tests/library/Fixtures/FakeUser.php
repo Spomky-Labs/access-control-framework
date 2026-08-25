@@ -14,10 +14,6 @@ final readonly class FakeUser implements UserInterface
     ) {
     }
 
-    public function eraseCredentials(): void
-    {
-    }
-
     public function getUserIdentifier(): string
     {
         return $this->username;

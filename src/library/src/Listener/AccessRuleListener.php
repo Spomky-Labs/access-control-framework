@@ -23,8 +23,6 @@ use Symfony\Component\HttpKernel\KernelEvents;
  * answers 403 or redirects to the login page, and an application without one gets the 403 the
  * exception carries.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AccessRuleListener implements EventSubscriberInterface
@@ -34,7 +32,7 @@ final readonly class AccessRuleListener implements EventSubscriberInterface
      * It is still worth recording: without it, a rule naming several roles reads in the profiler as
      * several unrelated questions.
      */
-    private const ORIGIN = 'access_control.rules';
+    private const string ORIGIN = 'access_control.rules';
 
     public function __construct(
         private AccessRuleMapInterface $accessRuleMap,
@@ -61,25 +59,29 @@ final readonly class AccessRuleListener implements EventSubscriberInterface
      */
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (! $event->isMainRequest()) {
             return;
         }
 
         $request = $event->getRequest();
         $accessPolicy = $this->accessRuleMap->getRule($request)?->accessPolicy;
 
-        if (null === $accessPolicy) {
+        if ($accessPolicy === null) {
             return;
         }
 
         $context = new AccessPolicyContext(
             $this->requesterProvider->getRequester(),
-            ['request' => $request],
-            ['request' => $request],
+            [
+                'request' => $request,
+            ],
+            [
+                'request' => $request,
+            ],
             self::ORIGIN,
         );
 
-        if (DecisionVote::ACCESS_DENIED !== $this->accessPolicyEvaluator->evaluate($accessPolicy, $context)->decision) {
+        if ($this->accessPolicyEvaluator->evaluate($accessPolicy, $context)->decision !== DecisionVote::ACCESS_DENIED) {
             return;
         }
 

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Twig;
 
-use PHPUnit\Framework\TestCase;
-use Symfony\Bridge\Twig\Extension\SecurityExtension;
 use AccessControl\Bundle\Twig\SecurityExtensionWithoutAuthorization;
+use Closure;
+use PHPUnit\Framework\TestCase;
+use ReflectionFunction;
+use Symfony\Bridge\Twig\Extension\SecurityExtension;
 use Symfony\Component\Security\Core\Authorization\AccessDecision;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\Authorization\UserAuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Twig\TwigFunction;
+use function sprintf;
 
 final class SecurityExtensionWithoutAuthorizationTest extends TestCase
 {
@@ -22,7 +25,7 @@ final class SecurityExtensionWithoutAuthorizationTest extends TestCase
      */
     public function testItPublishesEverythingButTheTwoTheComponentAnswers()
     {
-        $this->assertSame([
+        static::assertSame([
             'access_decision',
             'impersonation_exit_url',
             'impersonation_exit_path',
@@ -45,8 +48,8 @@ final class SecurityExtensionWithoutAuthorizationTest extends TestCase
         foreach ($extension->getFunctions() as $function) {
             $callable = $function->getCallable();
 
-            $this->assertInstanceOf(\Closure::class, $callable);
-            $this->assertSame($extension, (new \ReflectionFunction($callable))->getClosureThis(), \sprintf('"%s()" is bound elsewhere.', $function->getName()));
+            static::assertInstanceOf(Closure::class, $callable);
+            static::assertSame($extension, new ReflectionFunction($callable)->getClosureThis(), sprintf('"%s()" is bound elsewhere.', $function->getName()));
         }
     }
 
@@ -63,7 +66,7 @@ final class SecurityExtensionWithoutAuthorizationTest extends TestCase
         sort($published);
         sort($known);
 
-        $this->assertSame($published, $known, 'Security publishes a function this bundle neither takes over nor delegates.');
+        static::assertSame($published, $known, 'Security publishes a function this bundle neither takes over nor delegates.');
     }
 
     /**
@@ -81,7 +84,7 @@ final class SecurityExtensionWithoutAuthorizationTest extends TestCase
      */
     private function securityExtension(): SecurityExtension
     {
-        return new SecurityExtension(new class implements AuthorizationCheckerInterface, UserAuthorizationCheckerInterface {
+        return new SecurityExtension(new class() implements AuthorizationCheckerInterface, UserAuthorizationCheckerInterface {
             public function isGranted(mixed $attribute, mixed $subject = null, ?AccessDecision $accessDecision = null): bool
             {
                 return false;

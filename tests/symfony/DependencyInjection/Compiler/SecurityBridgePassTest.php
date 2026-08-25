@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\DependencyInjection\Compiler;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Symfony\Bridge\Twig\Extension\SecurityExtension;
-use AccessControl\Bundle\DependencyInjection\Compiler\SecurityBridgePass;
-use AccessControl\Tests\Bundle\Functional\AlwaysDenyingStrategy;
-use AccessControl\Bundle\Twig\SecurityExtensionWithoutAuthorization;
 use AccessControl\AccessRequest;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\AtLeastOneOf;
@@ -17,12 +11,18 @@ use AccessControl\Bridge\Security\AuthorizationCheckerAdapter;
 use AccessControl\Bridge\Security\RoleHierarchyAdapter;
 use AccessControl\Bridge\Security\StrategyAdapter;
 use AccessControl\Bridge\Security\VoterAdapter;
+use AccessControl\Bundle\DependencyInjection\Compiler\SecurityBridgePass;
+use AccessControl\Bundle\Twig\SecurityExtensionWithoutAuthorization;
 use AccessControl\DecisionVote;
 use AccessControl\Strategy\MajorityStrategy;
+use AccessControl\Tests\Bundle\Functional\AlwaysDenyingStrategy;
 use AccessControl\Tests\Fixtures\SecurityPostVoter;
 use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+use Symfony\Bridge\Twig\Extension\SecurityExtension;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -38,10 +38,11 @@ use Symfony\Component\Security\Core\Authorization\Strategy\ConsensusStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\PriorityStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\UnanimousStrategy;
 use Symfony\Component\Security\Core\Role\RoleHierarchy as SecurityRoleHierarchy;
+use function dirname;
 
 final class SecurityBridgePassTest extends TestCase
 {
-    private const SECURITY_OWN_VOTERS = [
+    private const array SECURITY_OWN_VOTERS = [
         'security.access.simple_role_voter',
         'security.access.role_hierarchy_voter',
         'security.access.authenticated_voter',
@@ -57,11 +58,13 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithAccessControl();
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertEquals(
+        static::assertEquals(
             new Reference('security.authentication.trust_resolver'),
-            $container->getDefinition('access_control.voter.expression')->getArgument(2),
+            $container->getDefinition('access_control.voter.expression')
+                ->getArgument(2),
         );
     }
 
@@ -79,21 +82,25 @@ final class SecurityBridgePassTest extends TestCase
         $container = $this->containerWithAccessControl();
         $container->register('security.role_hierarchy', SecurityRoleHierarchy::class)->setArguments([[]]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame('access_control.role_hierarchy.security', (string) $container->getAlias('access_control.role_hierarchy'));
-        $this->assertSame(RoleHierarchyAdapter::class, $container->getDefinition('access_control.role_hierarchy.security')->getClass());
-        $this->assertEquals(
+        static::assertSame('access_control.role_hierarchy.security', (string) $container->getAlias('access_control.role_hierarchy'));
+        static::assertSame(RoleHierarchyAdapter::class, $container->getDefinition('access_control.role_hierarchy.security')->getClass());
+        static::assertEquals(
             new Reference('security.role_hierarchy'),
-            $container->getDefinition('access_control.role_hierarchy.security')->getArgument(0),
+            $container->getDefinition('access_control.role_hierarchy.security')
+                ->getArgument(0),
         );
-        $this->assertEquals(
+        static::assertEquals(
             new Reference('access_control.role_hierarchy'),
-            $container->getDefinition('access_control.voter.role')->getArgument(0),
+            $container->getDefinition('access_control.voter.role')
+                ->getArgument(0),
         );
-        $this->assertEquals(
+        static::assertEquals(
             new Reference('access_control.role_hierarchy'),
-            $container->getDefinition('access_control.voter.expression')->getArgument(3),
+            $container->getDefinition('access_control.voter.expression')
+                ->getArgument(3),
         );
     }
 
@@ -124,12 +131,13 @@ final class SecurityBridgePassTest extends TestCase
         $container->getDefinition('security.access.decision_manager')
             ->setArguments([[], new Definition($securityStrategy, [false])]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame($expected, $container->getParameter('access_control.default_strategy'));
+        static::assertSame($expected, $container->getParameter('access_control.default_strategy'));
 
-        $this->assertSame($securityName, $container->getParameter('.access_control.default_strategy_alias'));
-        $this->assertSame($securityName, $container->getDefinition('access_control.access_decision_manager')->getArgument(3));
+        static::assertSame($securityName, $container->getParameter('.access_control.default_strategy_alias'));
+        static::assertSame($securityName, $container->getDefinition('access_control.access_decision_manager')->getArgument(3));
     }
 
     public function testTheEqualityRuleOfConsensusIsCarriedOver()
@@ -138,9 +146,10 @@ final class SecurityBridgePassTest extends TestCase
         $container->getDefinition('security.access.decision_manager')
             ->setArguments([[], new Definition(ConsensusStrategy::class, [false, false])]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertFalse($container->getDefinition('access_control.strategy.majority')->getArgument(0));
+        static::assertFalse($container->getDefinition('access_control.strategy.majority')->getArgument(0));
     }
 
     /**
@@ -157,13 +166,14 @@ final class SecurityBridgePassTest extends TestCase
         $container->getDefinition('security.access.decision_manager')
             ->setArguments([[], new Reference('app.strategy')]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame('security', $container->getParameter('access_control.default_strategy'));
-        $this->assertSame(StrategyAdapter::class, $container->getDefinition('access_control.strategy.security')->getClass());
-        $this->assertEquals(new Reference('app.strategy'), $container->getDefinition('access_control.strategy.security')->getArgument(0));
+        static::assertSame('security', $container->getParameter('access_control.default_strategy'));
+        static::assertSame(StrategyAdapter::class, $container->getDefinition('access_control.strategy.security')->getClass());
+        static::assertEquals(new Reference('app.strategy'), $container->getDefinition('access_control.strategy.security')->getArgument(0));
 
-        $this->assertSame(AlwaysDenyingStrategy::class, $container->getDefinition('access_control.access_decision_manager')->getArgument(3));
+        static::assertSame(AlwaysDenyingStrategy::class, $container->getDefinition('access_control.access_decision_manager')->getArgument(3));
     }
 
     /**
@@ -177,9 +187,10 @@ final class SecurityBridgePassTest extends TestCase
         $container->getDefinition('security.access.decision_manager')
             ->setArguments([[], new Definition(AffirmativeStrategy::class, [true])]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->getParameter('access_control.allow_if_all_abstain'));
+        static::assertTrue($container->getParameter('access_control.allow_if_all_abstain'));
     }
 
     /**
@@ -194,9 +205,10 @@ final class SecurityBridgePassTest extends TestCase
             ->setArguments([[], new Definition(AffirmativeStrategy::class, [true])]);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('allow_if_all_abstain');
+        $this->expectExceptionMessageIsOrContains('allow_if_all_abstain');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
     }
 
     /**
@@ -212,9 +224,10 @@ final class SecurityBridgePassTest extends TestCase
             ->setArguments([[], new Definition(UnanimousStrategy::class, [false])]);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('deny_overrides');
+        $this->expectExceptionMessageIsOrContains('deny_overrides');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
     }
 
     /**
@@ -229,9 +242,10 @@ final class SecurityBridgePassTest extends TestCase
         $container->getDefinition('security.access.decision_manager')
             ->setArguments([[], new Definition(AffirmativeStrategy::class, [false])]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame('permit_overrides', $container->getParameter('access_control.default_strategy'));
+        static::assertSame('permit_overrides', $container->getParameter('access_control.default_strategy'));
     }
 
     /**
@@ -242,12 +256,15 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithAccessControl();
         $container->register('security.role_hierarchy', SecurityRoleHierarchy::class)->setArguments([[]]);
-        $container->setParameter('access_control.role_hierarchy.roles', ['ROLE_ADMIN' => ['ROLE_USER']]);
+        $container->setParameter('access_control.role_hierarchy.roles', [
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ]);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('has no Security');
+        $this->expectExceptionMessageIsOrContains('has no Security');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
     }
 
     /**
@@ -257,21 +274,25 @@ final class SecurityBridgePassTest extends TestCase
     public function testAHierarchyOfItsOwnSurvivesWithoutSecurity()
     {
         $container = $this->containerWithAccessControl();
-        $container->setParameter('access_control.role_hierarchy.roles', ['ROLE_ADMIN' => ['ROLE_USER']]);
+        $container->setParameter('access_control.role_hierarchy.roles', [
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertFalse($container->hasAlias('access_control.role_hierarchy'));
+        static::assertFalse($container->hasAlias('access_control.role_hierarchy'));
     }
 
     public function testTheComponentKeepsItsOwnHierarchyWithoutSecuritys()
     {
         $container = $this->containerWithAccessControl();
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertFalse($container->hasAlias('access_control.role_hierarchy'));
-        $this->assertSame(RoleHierarchy::class, $container->getDefinition('access_control.role_hierarchy')->getClass());
+        static::assertFalse($container->hasAlias('access_control.role_hierarchy'));
+        static::assertSame(RoleHierarchy::class, $container->getDefinition('access_control.role_hierarchy')->getClass());
     }
 
     public function testTheBridgeSurvivesAnAbsentExpressionVoter()
@@ -279,9 +300,10 @@ final class SecurityBridgePassTest extends TestCase
         $container = $this->containerWithAccessControl();
         $container->removeDefinition('access_control.voter.expression');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.voter.authenticated'));
+        static::assertTrue($container->hasDefinition('access_control.voter.authenticated'));
     }
 
     /**
@@ -292,9 +314,10 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithAccessControl();
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame('access_control.access_decision_manager', (string) $container->getAlias('security.access.decision_manager'));
+        static::assertSame('access_control.access_decision_manager', (string) $container->getAlias('security.access.decision_manager'));
     }
 
     /**
@@ -306,12 +329,13 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithoutSecurity();
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertFalse($container->hasDefinition('access_control.requester_provider.token_storage'));
-        $this->assertFalse($container->hasDefinition('access_control.access_decision_manager'));
-        $this->assertFalse($container->hasDefinition('access_control.authorization_checker'));
-        $this->assertSame('access_control.requester_provider.static', (string) $container->getAlias('access_control.requester_provider'));
+        static::assertFalse($container->hasDefinition('access_control.requester_provider.token_storage'));
+        static::assertFalse($container->hasDefinition('access_control.access_decision_manager'));
+        static::assertFalse($container->hasDefinition('access_control.authorization_checker'));
+        static::assertSame('access_control.requester_provider.static', (string) $container->getAlias('access_control.requester_provider'));
     }
 
     /**
@@ -322,21 +346,24 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithoutSecurity();
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.voter.authenticated'));
-        $this->assertNull($container->getDefinition('access_control.voter.authenticated')->getArgument(0));
+        static::assertTrue($container->hasDefinition('access_control.voter.authenticated'));
+        static::assertNull($container->getDefinition('access_control.voter.authenticated')->getArgument(0));
     }
 
     public function testTheTrustResolverReachesTheAuthenticatedVoter()
     {
         $container = $this->containerWithAccessControl();
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertEquals(
+        static::assertEquals(
             new Reference('security.authentication.trust_resolver'),
-            $container->getDefinition('access_control.voter.authenticated')->getArgument(0),
+            $container->getDefinition('access_control.voter.authenticated')
+                ->getArgument(0),
         );
     }
 
@@ -351,9 +378,10 @@ final class SecurityBridgePassTest extends TestCase
         $container->register('app.requester_provider');
         $container->setAlias('access_control.requester_provider', 'app.requester_provider');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame('app.requester_provider', (string) $container->getAlias('access_control.requester_provider'));
+        static::assertSame('app.requester_provider', (string) $container->getAlias('access_control.requester_provider'));
     }
 
     /**
@@ -370,9 +398,10 @@ final class SecurityBridgePassTest extends TestCase
         $container->register('security.channel_listener');
         $container->register('security.access_map');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.listener.channel'));
+        static::assertTrue($container->hasDefinition('access_control.listener.channel'));
     }
 
     /**
@@ -390,17 +419,19 @@ final class SecurityBridgePassTest extends TestCase
             ->addMethodCall('add', [new Reference('app.matcher'), ['ROLE_ADMIN', new Reference('.security.expression.1')], 'https'])
             ->addMethodCall('add', [new Reference('app.other_matcher'), ['ROLE_USER'], null]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $rules = $container->getDefinition('access_control.rule_map')->getArgument(0);
+        $rules = $container->getDefinition('access_control.rule_map')
+            ->getArgument(0);
 
-        $this->assertCount(2, $rules);
-        $this->assertEquals(new Reference('app.matcher'), $rules[0]->getArgument(0));
-        $this->assertSame('https', $rules[0]->getArgument(2));
+        static::assertCount(2, $rules);
+        static::assertEquals(new Reference('app.matcher'), $rules[0]->getArgument(0));
+        static::assertSame('https', $rules[0]->getArgument(2));
 
-        $this->assertSame(AtLeastOneOf::class, $rules[0]->getArgument(1)->getClass());
-        $this->assertSame(AccessPolicy::class, $rules[1]->getArgument(1)->getClass());
-        $this->assertSame('ROLE_USER', $rules[1]->getArgument(1)->getArgument(0));
+        static::assertSame(AtLeastOneOf::class, $rules[0]->getArgument(1)->getClass());
+        static::assertSame(AccessPolicy::class, $rules[1]->getArgument(1)->getClass());
+        static::assertSame('ROLE_USER', $rules[1]->getArgument(1)->getArgument(0));
     }
 
     /**
@@ -410,19 +441,24 @@ final class SecurityBridgePassTest extends TestCase
     public function testTheRulesAreTakenOutOfTheFirewalls()
     {
         $container = $this->containerWithAccessControl();
-        $container->register('security.access_map')->addMethodCall('add', [new Reference('app.matcher'), ['ROLE_ADMIN'], null]);
+        $container->register('security.access_map')
+            ->addMethodCall('add', [new Reference('app.matcher'), ['ROLE_ADMIN'], null]);
         $container->setParameter('security.firewalls', ['main']);
-        $container->register('security.firewall.map.context.main')->setArguments([new IteratorArgument([
-            new Reference('security.channel_listener'),
-            new Reference('security.firewall.authenticator.main'),
-            new Reference('security.access_listener'),
-        ])]);
+        $container->register('security.firewall.map.context.main')
+            ->setArguments([new IteratorArgument([
+                new Reference('security.channel_listener'),
+                new Reference('security.firewall.authenticator.main'),
+                new Reference('security.access_listener'),
+            ])]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertEquals(
+        static::assertEquals(
             [new Reference('security.firewall.authenticator.main')],
-            $container->getDefinition('security.firewall.map.context.main')->getArgument(0)->getValues(),
+            $container->getDefinition('security.firewall.map.context.main')
+                ->getArgument(0)
+                ->getValues(),
         );
     }
 
@@ -433,12 +469,14 @@ final class SecurityBridgePassTest extends TestCase
     public function testATakenOverRuleKeepsItsChannel()
     {
         $container = $this->containerWithAccessControl();
-        $container->register('security.access_map')->addMethodCall('add', [new Reference('app.matcher'), ['PUBLIC_ACCESS'], 'https']);
+        $container->register('security.access_map')
+            ->addMethodCall('add', [new Reference('app.matcher'), ['PUBLIC_ACCESS'], 'https']);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.listener.channel'));
-        $this->assertSame('https', $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(2));
+        static::assertTrue($container->hasDefinition('access_control.listener.channel'));
+        static::assertSame('https', $container->getDefinition('access_control.rule_map')->getArgument(0)[0]->getArgument(2));
     }
 
     /**
@@ -447,11 +485,13 @@ final class SecurityBridgePassTest extends TestCase
     public function testTheChannelListenerGoesWhenNoRuleAsksForOne()
     {
         $container = $this->containerWithAccessControl();
-        $container->register('security.access_map')->addMethodCall('add', [new Reference('app.matcher'), ['ROLE_ADMIN'], null]);
+        $container->register('security.access_map')
+            ->addMethodCall('add', [new Reference('app.matcher'), ['ROLE_ADMIN'], null]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertFalse($container->hasDefinition('access_control.listener.channel'));
+        static::assertFalse($container->hasDefinition('access_control.listener.channel'));
     }
 
     /**
@@ -462,12 +502,14 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithAccessControl();
         $container->register('access_control.rule_map');
-        $container->register('security.access_map')->addMethodCall('add', [null, ['ROLE_ADMIN'], null]);
+        $container->register('security.access_map')
+            ->addMethodCall('add', [null, ['ROLE_ADMIN'], null]);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('one key');
+        $this->expectExceptionMessageIsOrContains('one key');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
     }
 
     /**
@@ -480,12 +522,13 @@ final class SecurityBridgePassTest extends TestCase
         $container->register('access_control.twig.extension');
         $container->register('twig.extension.security', SecurityExtension::class);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.twig.extension'));
-        $this->assertSame(SecurityExtensionWithoutAuthorization::class, $container->getDefinition('twig.extension.security')->getClass());
-        $this->assertSame(SecurityExtension::class, $container->getDefinition('access_control.twig.extension.security')->getClass());
-        $this->assertSame([], $container->getDefinition('access_control.twig.extension.security')->getTag('twig.extension'));
+        static::assertTrue($container->hasDefinition('access_control.twig.extension'));
+        static::assertSame(SecurityExtensionWithoutAuthorization::class, $container->getDefinition('twig.extension.security')->getClass());
+        static::assertSame(SecurityExtension::class, $container->getDefinition('access_control.twig.extension.security')->getClass());
+        static::assertSame([], $container->getDefinition('access_control.twig.extension.security')->getTag('twig.extension'));
     }
 
     public function testTheTwigFunctionsStayWhenSecurityPublishesNone()
@@ -493,9 +536,10 @@ final class SecurityBridgePassTest extends TestCase
         $container = $this->containerWithAccessControl();
         $container->register('access_control.twig.extension');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.twig.extension'));
+        static::assertTrue($container->hasDefinition('access_control.twig.extension'));
     }
 
     /**
@@ -512,13 +556,15 @@ final class SecurityBridgePassTest extends TestCase
         $container->register('access_control.requester_provider.token_storage');
         $container->setAlias('access_control.requester_provider', 'access_control.requester_provider.token_storage');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.requester_provider.token_storage'));
-        $this->assertSame('access_control.requester_provider.token_storage', (string) $container->getAlias('access_control.requester_provider'));
-        $this->assertEquals(
+        static::assertTrue($container->hasDefinition('access_control.requester_provider.token_storage'));
+        static::assertSame('access_control.requester_provider.token_storage', (string) $container->getAlias('access_control.requester_provider'));
+        static::assertEquals(
             new Reference('security.authentication.trust_resolver'),
-            $container->getDefinition('access_control.voter.authenticated')->getArgument(0),
+            $container->getDefinition('access_control.voter.authenticated')
+                ->getArgument(0),
         );
     }
 
@@ -536,11 +582,12 @@ final class SecurityBridgePassTest extends TestCase
         $container->register('access_control.listener.is_granted');
         $container->register('controller.is_granted_attribute_listener');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertSame('app.decision_manager', (string) $container->getAlias('security.access.decision_manager'));
-        $this->assertSame(SecurityExtension::class, $container->getDefinition('twig.extension.security')->getClass());
-        $this->assertTrue($container->hasDefinition('controller.is_granted_attribute_listener'));
+        static::assertSame('app.decision_manager', (string) $container->getAlias('security.access.decision_manager'));
+        static::assertSame(SecurityExtension::class, $container->getDefinition('twig.extension.security')->getClass());
+        static::assertTrue($container->hasDefinition('controller.is_granted_attribute_listener'));
     }
 
     /**
@@ -553,10 +600,11 @@ final class SecurityBridgePassTest extends TestCase
         $container->register('access_control.listener.is_granted');
         $container->register('controller.is_granted_attribute_listener');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.listener.is_granted'));
-        $this->assertFalse($container->hasDefinition('controller.is_granted_attribute_listener'));
+        static::assertTrue($container->hasDefinition('access_control.listener.is_granted'));
+        static::assertFalse($container->hasDefinition('controller.is_granted_attribute_listener'));
     }
 
     /**
@@ -568,9 +616,10 @@ final class SecurityBridgePassTest extends TestCase
         $container = $this->containerWithAccessControl();
         $container->register('controller.is_granted_attribute_listener');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('controller.is_granted_attribute_listener'));
+        static::assertTrue($container->hasDefinition('controller.is_granted_attribute_listener'));
     }
 
     /**
@@ -582,9 +631,10 @@ final class SecurityBridgePassTest extends TestCase
         $container = $this->containerWithoutSecurity();
         $container->register('access_control.listener.is_granted');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.listener.is_granted'));
+        static::assertTrue($container->hasDefinition('access_control.listener.is_granted'));
     }
 
     public function testTheChannelListenerStaysWithoutARuleOfSecuritys()
@@ -592,18 +642,21 @@ final class SecurityBridgePassTest extends TestCase
         $container = $this->containerWithAccessControl();
         $container->register('access_control.listener.channel');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
-        $this->assertTrue($container->hasDefinition('access_control.listener.channel'));
+        static::assertTrue($container->hasDefinition('access_control.listener.channel'));
     }
 
     private function containerWithoutSecurity(): ContainerBuilder
     {
         $container = new ContainerBuilder();
-        $container->register('access_control.voter.authenticated')->setArguments([null]);
+        $container->register('access_control.voter.authenticated')
+            ->setArguments([null]);
         $container->register('access_control.requester_provider.static');
         $container->register('access_control.requester_provider.token_storage');
-        $container->register('access_control.access_decision_manager')->setArguments([null, null, null, 'permit_overrides']);
+        $container->register('access_control.access_decision_manager')
+            ->setArguments([null, null, null, 'permit_overrides']);
         $container->register('access_control.authorization_checker');
         $container->setAlias('access_control.requester_provider', 'access_control.requester_provider.token_storage');
 
@@ -617,15 +670,20 @@ final class SecurityBridgePassTest extends TestCase
     public function testAnApplicationVoterIsBridged()
     {
         $container = $this->containerWithAccessControl();
-        $container->register('app.post_voter', SecurityPostVoter::class)->addTag('security.voter', ['priority' => 12]);
+        $container->register('app.post_voter', SecurityPostVoter::class)->addTag('security.voter', [
+            'priority' => 12,
+        ]);
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
         $bridge = $container->getDefinition('access_control.voter.bridge.app.post_voter');
 
-        $this->assertSame(VoterAdapter::class, $bridge->getClass());
-        $this->assertEquals(new Reference('app.post_voter'), $bridge->getArgument(0));
-        $this->assertSame([['priority' => 12]], $bridge->getTag('access_control.voter'));
+        static::assertSame(VoterAdapter::class, $bridge->getClass());
+        static::assertEquals(new Reference('app.post_voter'), $bridge->getArgument(0));
+        static::assertSame([[
+            'priority' => 12,
+        ]], $bridge->getTag('access_control.voter'));
     }
 
     /**
@@ -637,18 +695,20 @@ final class SecurityBridgePassTest extends TestCase
     {
         $container = $this->containerWithAccessControl();
         foreach (self::SECURITY_OWN_VOTERS as $id) {
-            $container->register($id)->addTag('security.voter');
+            $container->register($id)
+                ->addTag('security.voter');
         }
 
         $container->register('app.post_voter', SecurityPostVoter::class)->addTag('security.voter');
 
-        (new SecurityBridgePass())->process($container);
+        new SecurityBridgePass()
+            ->process($container);
 
         foreach (self::SECURITY_OWN_VOTERS as $id) {
-            $this->assertFalse($container->hasDefinition('access_control.voter.bridge.'.$id), $id.' should not be bridged.');
+            static::assertFalse($container->hasDefinition('access_control.voter.bridge.' . $id), $id . ' should not be bridged.');
         }
 
-        $this->assertTrue($container->hasDefinition('access_control.voter.bridge.app.post_voter'));
+        static::assertTrue($container->hasDefinition('access_control.voter.bridge.app.post_voter'));
     }
 
     /**
@@ -671,25 +731,31 @@ final class SecurityBridgePassTest extends TestCase
         $container->setParameter('access_control.role_prefix', 'ROLE_');
         $container->setParameter('access_control.role_hierarchy.roles', []);
         $container->register('event_dispatcher', EventDispatcher::class);
-        $container->register('security.role_hierarchy', SecurityRoleHierarchy::class)->setArguments([['ROLE_ADMIN' => ['ROLE_USER']]]);
+        $container->register('security.role_hierarchy', SecurityRoleHierarchy::class)->setArguments([[
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ]]);
         $container->register('security.authentication.trust_resolver', AuthenticationTrustResolver::class);
         $container->register('security.token_storage', TokenStorage::class);
         $container->register('security.access.decision_manager');
 
-        $loader = new PhpFileLoader($container, new FileLocator(\dirname(__DIR__, 4).'/src/symfony/src/Resources/config'));
+        $loader = new PhpFileLoader($container, new FileLocator(dirname(__DIR__, 4) . '/src/symfony/src/Resources/config'));
         $loader->load('access_control.php');
         $loader->load('security_bridge.php');
 
-        (new SecurityBridgePass())->process($container);
-        $container->getDefinition('access_control.authorization_checker')->setPublic(true);
-        $container->getDefinition('access_control.manager')->setPublic(true);
-        $container->compile();
+        new SecurityBridgePass()
+            ->process($container);
+        $container->getDefinition('access_control.authorization_checker')
+            ->setPublic(true);
+        $container->getDefinition('access_control.manager')
+            ->setPublic(true);
+        $container->compile(true);
 
-        $this->assertInstanceOf(AuthorizationCheckerAdapter::class, $container->get('access_control.authorization_checker'));
+        static::assertInstanceOf(AuthorizationCheckerAdapter::class, $container->get('access_control.authorization_checker'));
 
-        $decision = $container->get('access_control.manager')->decide(new AccessRequest(null, 'ROLE_ADMIN'));
+        $decision = $container->get('access_control.manager')
+            ->decide(new AccessRequest(null, 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
     }
 
     private function containerWithAccessControl(): ContainerBuilder
@@ -697,13 +763,15 @@ final class SecurityBridgePassTest extends TestCase
         $container = new ContainerBuilder();
         $container->register('security.access.decision_manager');
         $container->register('access_control.manager');
-        $container->register('access_control.access_decision_manager')->setArguments([null, null, null, 'permit_overrides']);
+        $container->register('access_control.access_decision_manager')
+            ->setArguments([null, null, null, 'permit_overrides']);
         $container->register('access_control.role_hierarchy', RoleHierarchy::class)->setArguments([[]]);
         $container->register('access_control.voter.role', RoleVoter::class)
             ->setArguments([new Reference('access_control.role_hierarchy'), 'ROLE_']);
         $container->register('access_control.voter.expression', ExpressionVoter::class)
             ->setArguments([null, null, null, new Reference('access_control.role_hierarchy')]);
-        $container->register('access_control.voter.authenticated')->setArguments([null]);
+        $container->register('access_control.voter.authenticated')
+            ->setArguments([null]);
         $container->register('access_control.strategy.majority', MajorityStrategy::class)->setArguments([true]);
         $container->setParameter('access_control.default_strategy', 'permit_overrides');
         $container->setParameter('access_control.allow_if_all_abstain', false);

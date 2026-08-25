@@ -15,8 +15,6 @@ use AccessControl\Test\Constraint\AccessIs;
  * Both an outcome and a decision are accepted, so the very same assertion serves a single voter
  * under test and a manager assembled from several. To assert on what an elapsed request or command
  * decided rather than on a value, see the AccessControlAssertionsTrait of FrameworkBundle.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 trait AccessOutcomeAssertionsTrait
 {

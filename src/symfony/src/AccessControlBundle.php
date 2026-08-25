@@ -14,8 +14,6 @@ use Symfony\Component\Workflow\Event\GuardEvent;
 /**
  * Registering this bundle is the opt-in: from there on the AccessControl component decides.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 class AccessControlBundle extends Bundle

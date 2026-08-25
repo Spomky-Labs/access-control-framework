@@ -12,10 +12,10 @@ use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolverIn
 use Symfony\Component\Security\Core\Authentication\Token\OfflineTokenInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Exception\InvalidArgumentException;
+use function in_array;
+use function is_string;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AuthenticatedVoter implements VoterInterface
@@ -43,19 +43,19 @@ final readonly class AuthenticatedVoter implements VoterInterface
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
         $attribute = AuthenticationState::fromValue($accessRequest->attribute);
-        if (null === $attribute) {
+        if ($attribute === null) {
             return AccessOutcome::abstain('The attribute is not an authentication state.');
         }
 
-        if (AuthenticationState::PUBLIC_ACCESS === $attribute) {
+        if ($attribute === AuthenticationState::PUBLIC_ACCESS) {
             return AccessOutcome::grant('Access granted to public access');
         }
 
-        if (AuthenticationState::IS_IMPERSONATOR === $attribute && Actor::isActedFor($accessRequest->requester)) {
+        if ($attribute === AuthenticationState::IS_IMPERSONATOR && Actor::isActedFor($accessRequest->requester)) {
             return AccessOutcome::grant('Access granted by impersonator.');
         }
 
-        if (!$accessRequest->requester instanceof TokenInterface) {
+        if (! $accessRequest->requester instanceof TokenInterface) {
             return AccessOutcome::abstain('The requester is not an instance of TokenInterface.');
         }
 
@@ -63,26 +63,26 @@ final readonly class AuthenticatedVoter implements VoterInterface
             throw new InvalidArgumentException('Cannot decide on authentication attributes when an offline token is used.');
         }
 
-        if (null === $this->authenticationTrustResolver) {
+        if ($this->authenticationTrustResolver === null) {
             return AccessOutcome::deny('No authentication trust resolver is available.');
         }
 
-        if (AuthenticationState::IS_AUTHENTICATED_FULLY === $attribute
+        if ($attribute === AuthenticationState::IS_AUTHENTICATED_FULLY
             && $this->authenticationTrustResolver->isFullFledged($accessRequest->requester)) {
             return AccessOutcome::grant('Access granted by fully authenticated user.');
         }
 
-        if (AuthenticationState::IS_AUTHENTICATED_REMEMBERED === $attribute
+        if ($attribute === AuthenticationState::IS_AUTHENTICATED_REMEMBERED
             && ($this->authenticationTrustResolver->isRememberMe($accessRequest->requester)
                 || $this->authenticationTrustResolver->isFullFledged($accessRequest->requester))) {
             return AccessOutcome::grant('Access granted by remembered user.');
         }
 
-        if (AuthenticationState::IS_AUTHENTICATED === $attribute && $this->authenticationTrustResolver->isAuthenticated($accessRequest->requester)) {
+        if ($attribute === AuthenticationState::IS_AUTHENTICATED && $this->authenticationTrustResolver->isAuthenticated($accessRequest->requester)) {
             return AccessOutcome::grant('Access granted by authenticated user.');
         }
 
-        if (AuthenticationState::IS_REMEMBERED === $attribute && $this->authenticationTrustResolver->isRememberMe($accessRequest->requester)) {
+        if ($attribute === AuthenticationState::IS_REMEMBERED && $this->authenticationTrustResolver->isRememberMe($accessRequest->requester)) {
             return AccessOutcome::grant('Access granted by remembered user.');
         }
 
@@ -91,7 +91,7 @@ final readonly class AuthenticatedVoter implements VoterInterface
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return \is_string($attribute) && \in_array($attribute, AuthenticationState::caseNames(), true);
+        return is_string($attribute) && in_array($attribute, AuthenticationState::caseNames(), true);
     }
 
     public function supportsSubject(mixed $subject): bool

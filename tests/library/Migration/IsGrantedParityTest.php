@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Bridge\Security\IsGrantedListener;
@@ -29,6 +27,9 @@ use AccessControl\Tests\Fixtures\SecurityPostVoter;
 use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleVoter;
+use IteratorAggregate;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage as BaseExpressionLanguage;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
@@ -45,6 +46,9 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException as SecurityA
 use Symfony\Component\Security\Core\Role\RoleHierarchy as SecurityRoleHierarchy;
 use Symfony\Component\Security\Core\Role\RoleHierarchyInterface as SecurityRoleHierarchyInterface;
 use Symfony\Component\Security\Http\EventListener\IsGrantedAttributeListener;
+use Throwable;
+use Traversable;
+use function sprintf;
 
 /**
  * Runs the very same controller through Security's IsGrantedAttributeListener and through this
@@ -60,7 +64,9 @@ use Symfony\Component\Security\Http\EventListener\IsGrantedAttributeListener;
  */
 final class IsGrantedParityTest extends TestCase
 {
-    private const HIERARCHY = ['ROLE_ADMIN' => ['ROLE_USER']];
+    private const array HIERARCHY = [
+        'ROLE_ADMIN' => ['ROLE_USER'],
+    ];
 
     public function testARoleTheRequesterHolds(): void
     {
@@ -95,8 +101,8 @@ final class IsGrantedParityTest extends TestCase
     public function testACustomMessageReachesTheRequesterOnBothSides(): void
     {
         $this->assertBehavesAlike('customMessage');
-        $this->assertSame('Nope.', $this->denialMessage($this->securityListener(), 'customMessage'));
-        $this->assertSame('Nope.', $this->denialMessage($this->accessControlListener(), 'customMessage'));
+        static::assertSame('Nope.', $this->denialMessage($this->securityListener(), 'customMessage'));
+        static::assertSame('Nope.', $this->denialMessage($this->accessControlListener(), 'customMessage'));
     }
 
     /**
@@ -106,8 +112,8 @@ final class IsGrantedParityTest extends TestCase
      */
     public function testTheDefaultDenialMessageDiffersOnPurpose(): void
     {
-        $this->assertStringContainsString('ROLE_SUPER_ADMIN', $this->denialMessage($this->securityListener(), 'unreachableRole'));
-        $this->assertSame('Access Denied.', $this->denialMessage($this->accessControlListener(), 'unreachableRole'));
+        static::assertStringContainsString('ROLE_SUPER_ADMIN', $this->denialMessage($this->securityListener(), 'unreachableRole'));
+        static::assertSame('Access Denied.', $this->denialMessage($this->accessControlListener(), 'unreachableRole'));
     }
 
     /**
@@ -121,9 +127,9 @@ final class IsGrantedParityTest extends TestCase
         $securityDenial = $this->denial($this->securityListener(), 'unreachableRole');
         $accessControlDenial = $this->denial($this->accessControlListener(), 'unreachableRole');
 
-        $this->assertInstanceOf(SecurityAccessDeniedException::class, $securityDenial);
-        $this->assertInstanceOf(AccessDeniedException::class, $accessControlDenial);
-        $this->assertNotInstanceOf(AccessDeniedExceptionInterface::class, $securityDenial, 'Security is left untouched.');
+        static::assertInstanceOf(SecurityAccessDeniedException::class, $securityDenial);
+        static::assertInstanceOf(AccessDeniedException::class, $accessControlDenial);
+        static::assertNotInstanceOf(AccessDeniedExceptionInterface::class, $securityDenial, 'Security is left untouched.');
     }
 
     /**
@@ -147,8 +153,8 @@ final class IsGrantedParityTest extends TestCase
         $this->assertBehavesAlike('filteredOnTheHttpMethod');
         $this->assertBehavesAlike('filteredOnTheHttpMethod', method: 'POST');
 
-        $this->assertTrue($this->isGranted($this->accessControlListener(), 'filteredOnTheHttpMethod'));
-        $this->assertFalse($this->isGranted($this->accessControlListener(), 'filteredOnTheHttpMethod', method: 'POST'));
+        static::assertTrue($this->isGranted($this->accessControlListener(), 'filteredOnTheHttpMethod'));
+        static::assertFalse($this->isGranted($this->accessControlListener(), 'filteredOnTheHttpMethod', method: 'POST'));
     }
 
     /**
@@ -170,10 +176,10 @@ final class IsGrantedParityTest extends TestCase
     #[DataProvider('scenarios')]
     public function testTheSameAttributeReadByEitherStack(string $controllerMethod, array $arguments, string $method): void
     {
-        $this->assertSame(
+        static::assertSame(
             $this->isGranted($this->securityListener(), $controllerMethod, $arguments, $method),
             $this->isGranted($this->accessControlIsGrantedListener(), $controllerMethod, $arguments, $method),
-            \sprintf('The two stacks disagree on "%s()" over %s.', $controllerMethod, $method),
+            sprintf('The two stacks disagree on "%s()" over %s.', $controllerMethod, $method),
         );
     }
 
@@ -206,7 +212,7 @@ final class IsGrantedParityTest extends TestCase
      */
     public function testACustomMessageSurvivesTheChangeOfStack(): void
     {
-        $this->assertSame(
+        static::assertSame(
             $this->denialMessage($this->securityListener(), 'customMessage'),
             $this->denialMessage($this->accessControlIsGrantedListener(), 'customMessage'),
         );
@@ -214,10 +220,10 @@ final class IsGrantedParityTest extends TestCase
 
     private function assertBehavesAlike(string $controllerMethod, array $arguments = [], string $method = 'GET'): void
     {
-        $this->assertSame(
+        static::assertSame(
             $this->isGranted($this->securityListener(), $controllerMethod, $arguments, $method),
             $this->isGranted($this->accessControlListener(), $controllerMethod, $arguments, $method),
-            \sprintf('Security and AccessControl disagree on "%s()" over %s.', $controllerMethod, $method),
+            sprintf('Security and AccessControl disagree on "%s()" over %s.', $controllerMethod, $method),
         );
     }
 
@@ -234,10 +240,11 @@ final class IsGrantedParityTest extends TestCase
 
     private function denialMessage(IsGrantedAttributeListener|AccessPolicyListener|IsGrantedListener $listener, string $method): string
     {
-        return $this->denial($listener, $method)->getMessage();
+        return $this->denial($listener, $method)
+            ->getMessage();
     }
 
-    private function denial(IsGrantedAttributeListener|AccessPolicyListener|IsGrantedListener $listener, string $method): \Throwable
+    private function denial(IsGrantedAttributeListener|AccessPolicyListener|IsGrantedListener $listener, string $method): Throwable
     {
         try {
             $listener->onKernelControllerArguments($this->createEvent($method));
@@ -245,13 +252,13 @@ final class IsGrantedParityTest extends TestCase
             return $exception;
         }
 
-        $this->fail(\sprintf('"%s()" was expected to be denied.', $method));
+        static::fail(sprintf('"%s()" was expected to be denied.', $method));
     }
 
     private function createEvent(string $controllerMethod, array $arguments = [], string $method = 'GET'): ControllerArgumentsEvent
     {
         return new ControllerArgumentsEvent(
-            $this->createStub(HttpKernelInterface::class),
+            static::createStub(HttpKernelInterface::class),
             [new DuallyControlledController(), $controllerMethod],
             $arguments,
             Request::create('/', $method),
@@ -265,7 +272,7 @@ final class IsGrantedParityTest extends TestCase
      */
     private function securityListener(): IsGrantedAttributeListener
     {
-        $voters = new class(new SecurityRoleHierarchy(self::HIERARCHY)) implements \IteratorAggregate {
+        $voters = new class(new SecurityRoleHierarchy(self::HIERARCHY)) implements IteratorAggregate {
             public ?AuthorizationCheckerInterface $authChecker = null;
 
             public function __construct(
@@ -273,7 +280,7 @@ final class IsGrantedParityTest extends TestCase
             ) {
             }
 
-            public function getIterator(): \Traversable
+            public function getIterator(): Traversable
             {
                 yield new SecurityRoleHierarchyVoter($this->roleHierarchy);
                 yield new SecurityExpressionVoter(new SecurityExpressionLanguage(), new AuthenticationTrustResolver(), $this->authChecker, $this->roleHierarchy);

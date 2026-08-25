@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Controller;
 
-use PHPUnit\Framework\TestCase;
-use AccessControl\Bundle\Controller\AccessControlTrait;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessOutcome;
+use AccessControl\Bundle\Controller\AccessControlTrait;
 use AccessControl\Exception\AccessDeniedException;
 use AccessControl\Requester\StaticRequesterProvider;
 use AccessControl\RequesterBoundChecker;
 use AccessControl\Tests\Fixtures\FixedOutcomeVoter;
+use LogicException;
+use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException as SecurityAccessDeniedException;
@@ -25,7 +26,7 @@ final class AccessControlTraitTest extends TestCase
 {
     public function testTheBaseControllerAloneCannotAnswer()
     {
-        $controller = new class extends AbstractControllerWithoutAccessControl {
+        $controller = new class() extends AbstractControllerWithoutAccessControl {
             public function ask(): bool
             {
                 return $this->isGranted('ROLE_ADMIN');
@@ -33,8 +34,8 @@ final class AccessControlTraitTest extends TestCase
         };
         $controller->setContainer(new Container());
 
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('The SecurityBundle is not registered');
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('The SecurityBundle is not registered');
 
         $controller->ask();
     }
@@ -44,8 +45,8 @@ final class AccessControlTraitTest extends TestCase
         $controller = $this->controller();
         $controller->setContainer($this->container(accessControl: true));
 
-        $this->assertTrue($controller->ask('ROLE_ADMIN'));
-        $this->assertFalse($controller->ask('ROLE_ACCOUNTANT'));
+        static::assertTrue($controller->ask('ROLE_ADMIN'));
+        static::assertFalse($controller->ask('ROLE_ACCOUNTANT'));
     }
 
     /**
@@ -55,7 +56,9 @@ final class AccessControlTraitTest extends TestCase
     public function testSecurityKeepsAnsweringWhenItIsThere()
     {
         $authorizationChecker = $this->createMock(AuthorizationCheckerInterface::class);
-        $authorizationChecker->expects($this->once())->method('isGranted')->willReturn(true);
+        $authorizationChecker->expects(static::once())
+            ->method('isGranted')
+            ->willReturn(true);
 
         $container = $this->container(accessControl: false);
         $container->set('security.authorization_checker', $authorizationChecker);
@@ -63,7 +66,7 @@ final class AccessControlTraitTest extends TestCase
         $controller = $this->controller();
         $controller->setContainer($container);
 
-        $this->assertTrue($controller->ask('ROLE_ADMIN'));
+        static::assertTrue($controller->ask('ROLE_ADMIN'));
     }
 
     public function testADenialRaisesTheComponentException()
@@ -72,7 +75,7 @@ final class AccessControlTraitTest extends TestCase
         $controller->setContainer($this->container(accessControl: true));
 
         $this->expectException(AccessDeniedException::class);
-        $this->expectExceptionMessage('Administrators only.');
+        $this->expectExceptionMessageIsOrContains('Administrators only.');
 
         $controller->deny('ROLE_ACCOUNTANT', 'Administrators only.');
     }
@@ -92,8 +95,9 @@ final class AccessControlTraitTest extends TestCase
      */
     public function testADenialIsLeftToTheParentWhenSecurityIsThere()
     {
-        $authorizationChecker = $this->createStub(AuthorizationCheckerInterface::class);
-        $authorizationChecker->method('isGranted')->willReturn(false);
+        $authorizationChecker = static::createStub(AuthorizationCheckerInterface::class);
+        $authorizationChecker->method('isGranted')
+            ->willReturn(false);
 
         $container = $this->container(accessControl: true);
         $container->set('security.authorization_checker', $authorizationChecker);
@@ -103,10 +107,10 @@ final class AccessControlTraitTest extends TestCase
 
         try {
             $controller->deny('ROLE_ADMIN', 'Administrators only.');
-            $this->fail('Access should have been denied.');
+            static::fail('Access should have been denied.');
         } catch (SecurityAccessDeniedException $exception) {
-            $this->assertSame('Administrators only.', $exception->getMessage());
-            $this->assertSame(['ROLE_ADMIN'], $exception->getAttributes());
+            static::assertSame('Administrators only.', $exception->getMessage());
+            static::assertSame(['ROLE_ADMIN'], $exception->getAttributes());
         }
     }
 
@@ -116,8 +120,9 @@ final class AccessControlTraitTest extends TestCase
      */
     public function testTheNumberOfArgumentsSurvivesTheForwarding()
     {
-        $authorizationChecker = $this->createStub(AuthorizationCheckerInterface::class);
-        $authorizationChecker->method('isGranted')->willReturn(false);
+        $authorizationChecker = static::createStub(AuthorizationCheckerInterface::class);
+        $authorizationChecker->method('isGranted')
+            ->willReturn(false);
 
         $container = $this->container(accessControl: true);
         $container->set('security.authorization_checker', $authorizationChecker);
@@ -126,7 +131,7 @@ final class AccessControlTraitTest extends TestCase
         $controller->setContainer($container);
 
         $this->expectException(SecurityAccessDeniedException::class);
-        $this->expectExceptionMessage('Denied by Security.');
+        $this->expectExceptionMessageIsOrContains('Denied by Security.');
 
         $controller->denyWithoutAMessage('ROLE_ADMIN');
     }
@@ -139,8 +144,8 @@ final class AccessControlTraitTest extends TestCase
     {
         $services = $this->controller()::getSubscribedServices();
 
-        $this->assertSame('?'.RequesterBoundChecker::class, $services['access_control.checker']);
-        $this->assertSame('?'.AuthorizationCheckerInterface::class, $services['security.authorization_checker']);
+        static::assertSame('?' . RequesterBoundChecker::class, $services['access_control.checker']);
+        static::assertSame('?' . AuthorizationCheckerInterface::class, $services['security.authorization_checker']);
     }
 
     /**
@@ -150,7 +155,7 @@ final class AccessControlTraitTest extends TestCase
      */
     public function testItFitsOnTheAbstractControllerOfThisRepository()
     {
-        $controller = new class extends AbstractController {
+        $controller = new class() extends AbstractController {
             use AccessControlTrait;
 
             public function ask(mixed $attribute): bool
@@ -160,13 +165,13 @@ final class AccessControlTraitTest extends TestCase
         };
         $controller->setContainer($this->container(accessControl: true));
 
-        $this->assertTrue($controller->ask('ROLE_ADMIN'));
-        $this->assertArrayHasKey('router', $controller::getSubscribedServices());
+        static::assertTrue($controller->ask('ROLE_ADMIN'));
+        static::assertArrayHasKey('router', $controller::getSubscribedServices());
     }
 
     private function controller(): object
     {
-        return new class extends AbstractControllerWithoutAccessControl {
+        return new class() extends AbstractControllerWithoutAccessControl {
             use AccessControlTrait;
 
             public function ask(mixed $attribute): bool

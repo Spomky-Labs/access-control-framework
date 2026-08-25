@@ -11,10 +11,10 @@ use AccessControl\Attribute\AccessPolicyInterface;
 use AccessControl\Attribute\When;
 use AccessControl\DecisionVote;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+use function assert;
+use function sprintf;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class WhenHandler implements AccessPolicyHandlerInterface
@@ -31,10 +31,10 @@ final readonly class WhenHandler implements AccessPolicyHandlerInterface
 
     public function handle(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context, AccessPolicyEvaluator $evaluator): AccessOutcome
     {
-        \assert($accessPolicy instanceof When);
+        assert($accessPolicy instanceof When);
 
-        if (!$this->expressionLanguage->evaluate($accessPolicy->condition, $this->getVariables($context))) {
-            return AccessOutcome::abstain(\sprintf('The condition (%s) does not hold.', $accessPolicy->condition));
+        if (! $this->expressionLanguage->evaluate($accessPolicy->condition, $this->getVariables($context))) {
+            return AccessOutcome::abstain(sprintf('The condition (%s) does not hold.', $accessPolicy->condition));
         }
 
         $granted = 0;
@@ -42,16 +42,16 @@ final readonly class WhenHandler implements AccessPolicyHandlerInterface
         foreach ($accessPolicy->accessPolicies as $nested) {
             $outcome = $evaluator->evaluate($nested, $context);
 
-            if (DecisionVote::ACCESS_DENIED === $outcome->decision) {
+            if ($outcome->decision === DecisionVote::ACCESS_DENIED) {
                 return $outcome;
             }
 
-            if (DecisionVote::ACCESS_GRANTED === $outcome->decision) {
+            if ($outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 ++$granted;
             }
         }
 
-        if (0 === $granted) {
+        if ($granted === 0) {
             return AccessOutcome::abstain('No nested access policy applied.');
         }
 

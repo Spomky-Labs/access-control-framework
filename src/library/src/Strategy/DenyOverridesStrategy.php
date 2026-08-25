@@ -21,8 +21,6 @@ use AccessControl\DecisionVote;
  * This is the "unanimous" strategy of the Security component: denying as soon as one voter denies
  * and granting otherwise amounts to the unanimity of the voters that did not abstain.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class DenyOverridesStrategy implements StrategyInterface
@@ -40,11 +38,11 @@ final readonly class DenyOverridesStrategy implements StrategyInterface
         $grant = 0;
 
         foreach ($votes as $vote) {
-            if (DecisionVote::ACCESS_DENIED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_DENIED) {
                 return AccessDecision::deny($accessRequest, $votes, 'At least one voter denied access.');
             }
 
-            if (DecisionVote::ACCESS_GRANTED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 ++$grant;
             }
         }

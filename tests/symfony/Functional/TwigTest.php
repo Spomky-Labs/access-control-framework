@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace AccessControl\Tests\Bundle\Functional;
 
 use AccessControl\Bundle\Test\AccessControlAssertionsTrait;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use AccessControl\Exception\AccessDeniedException;
 use AccessControl\RequesterBoundChecker;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 /**
  * A template calling is_granted() used to be a syntax error in an application without Security,
  * whichever way it was written, since the function comes from SecurityBundle's Twig extension.
  */
-class TwigTest extends WebTestCase
+final class TwigTest extends WebTestCase
 {
     use AccessControlAssertionsTrait;
 
@@ -26,10 +26,12 @@ class TwigTest extends WebTestCase
     public function testATemplateAsksAndIsAnswered()
     {
         $client = static::createClient();
-        $client->request('GET', '/twig/template', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/twig/template', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertSame('admin|not-super', trim($client->getResponse()->getContent()));
+        static::assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame('admin|not-super', trim($client->getResponse()->getContent()));
         $this->assertAccessWasGrantedOn('ROLE_ADMIN');
         $this->assertAccessWasDeniedOn('ROLE_SUPER_ADMIN');
     }
@@ -39,8 +41,8 @@ class TwigTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/twig/template');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertSame('not-admin|not-super', trim($client->getResponse()->getContent()));
+        static::assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame('not-admin|not-super', trim($client->getResponse()->getContent()));
     }
 
     /**
@@ -50,15 +52,19 @@ class TwigTest extends WebTestCase
     public function testTheCheckerIsInjectableByType()
     {
         $client = static::createClient();
-        $client->request('GET', '/twig/injected', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/twig/injected', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame('granted', $client->getResponse()->getContent());
+        static::assertSame('granted', $client->getResponse()->getContent());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
-        $client->request('GET', '/twig/injected', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
+        $client->request('GET', '/twig/injected', server: [
+            'HTTP_X_ROLES' => 'ROLE_USER',
+        ]);
 
-        $this->assertSame('denied', $client->getResponse()->getContent());
+        static::assertSame('denied', $client->getResponse()->getContent());
     }
 
     /**
@@ -68,34 +74,42 @@ class TwigTest extends WebTestCase
     public function testTheControllerHelpersAnswerWithoutSecurity()
     {
         $client = static::createClient();
-        $client->request('GET', '/helper/is-granted', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/helper/is-granted', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame('granted', $client->getResponse()->getContent());
+        static::assertSame('granted', $client->getResponse()->getContent());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
-        $client->request('GET', '/helper/is-granted', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
+        $client->request('GET', '/helper/is-granted', server: [
+            'HTTP_X_ROLES' => 'ROLE_USER',
+        ]);
 
-        $this->assertSame('denied', $client->getResponse()->getContent());
+        static::assertSame('denied', $client->getResponse()->getContent());
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
     }
 
     public function testDenyAccessUnlessGrantedAnswersWithoutSecurity()
     {
         $client = static::createClient();
-        $client->request('GET', '/helper/deny-unless', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/helper/deny-unless', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame('reached', $client->getResponse()->getContent());
+        static::assertSame('reached', $client->getResponse()->getContent());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
         $client->catchExceptions(false);
 
         try {
-            $client->request('GET', '/helper/deny-unless', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
-            $this->fail('Access should have been denied.');
+            $client->request('GET', '/helper/deny-unless', server: [
+                'HTTP_X_ROLES' => 'ROLE_USER',
+            ]);
+            static::fail('Access should have been denied.');
         } catch (AccessDeniedException $exception) {
-            $this->assertSame('Administrators only.', $exception->getMessage());
+            static::assertSame('Administrators only.', $exception->getMessage());
         }
     }
 
@@ -106,9 +120,11 @@ class TwigTest extends WebTestCase
     public function testADenialFromAControllerHelperAnswers403()
     {
         $client = static::createClient();
-        $client->request('GET', '/helper/deny-unless', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
+        $client->request('GET', '/helper/deny-unless', server: [
+            'HTTP_X_ROLES' => 'ROLE_USER',
+        ]);
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
     }
 
     /**
@@ -119,15 +135,19 @@ class TwigTest extends WebTestCase
     public function testSecuritysAttributeIsStillEnforcedWithoutSecurity()
     {
         $client = static::createClient();
-        $client->request('GET', '/helper/is-granted-attribute', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/helper/is-granted-attribute', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame('reached', $client->getResponse()->getContent());
+        static::assertSame('reached', $client->getResponse()->getContent());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
-        $client->request('GET', '/helper/is-granted-attribute', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
+        $client->request('GET', '/helper/is-granted-attribute', server: [
+            'HTTP_X_ROLES' => 'ROLE_USER',
+        ]);
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
     }
 
@@ -138,15 +158,17 @@ class TwigTest extends WebTestCase
     public function testTheStatusCodeOfTheAttributeIsHonoured()
     {
         $client = static::createClient();
-        $client->request('GET', '/helper/is-granted-status', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
+        $client->request('GET', '/helper/is-granted-status', server: [
+            'HTTP_X_ROLES' => 'ROLE_USER',
+        ]);
 
-        $this->assertSame(404, $client->getResponse()->getStatusCode());
+        static::assertSame(404, $client->getResponse()->getStatusCode());
     }
 
     public function testTheCheckerIsBoundToWhoeverAsksRightNow()
     {
         static::createClient();
 
-        $this->assertInstanceOf(RequesterBoundChecker::class, static::getContainer()->get('access_control.checker'));
+        static::assertInstanceOf(RequesterBoundChecker::class, static::getContainer()->get('access_control.checker'));
     }
 }

@@ -14,8 +14,6 @@ use Symfony\Component\HttpFoundation\RequestMatcherInterface;
  * are two different questions and keeping them apart is what lets a matcher stay a matcher: the
  * voters run on the requests a rule already selected, not on every request that goes by.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AccessRule

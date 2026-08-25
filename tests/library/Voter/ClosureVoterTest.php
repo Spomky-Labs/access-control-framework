@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Voter;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessDecision;
 use AccessControl\AccessEnvironment;
@@ -16,6 +15,7 @@ use AccessControl\Tests\Fixtures\Post;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Voter\ClosureVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\TestCase;
 
 final class ClosureVoterTest extends TestCase
 {
@@ -23,14 +23,14 @@ final class ClosureVoterTest extends TestCase
     {
         $decision = $this->decide(static fn (): bool => true);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
     }
 
     public function testAClosureReturningFalseDeniesAccess(): void
     {
         $decision = $this->decide(static fn (): bool => false);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
     }
 
     public function testTheClosureReceivesTheWholeAccessRequest(): void
@@ -44,8 +44,8 @@ final class ClosureVoterTest extends TestCase
             return true;
         }, $post);
 
-        $this->assertSame($post, $seen->subject);
-        $this->assertSame('editorial', $seen->environment->get('desk'));
+        static::assertSame($post, $seen->subject);
+        static::assertSame('editorial', $seen->environment->get('desk'));
     }
 
     /**
@@ -57,23 +57,23 @@ final class ClosureVoterTest extends TestCase
         $granted = $this->decide(static fn (AccessRequest $accessRequest, RequesterBoundChecker $checker): bool => $checker->isGranted('ROLE_ADMIN'));
         $denied = $this->decide(static fn (AccessRequest $accessRequest, RequesterBoundChecker $checker): bool => $checker->isGranted('ROLE_SUPER_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
     }
 
     public function testTheReasonNamesTheClosure(): void
     {
         $decision = $this->decide(static fn (): bool => false);
 
-        $this->assertStringContainsString('returned false', $decision->reason);
+        static::assertStringContainsString('returned false', (string) $decision->reason);
     }
 
     public function testANonClosureAttributeIsLeftToTheOtherVoters(): void
     {
         $decision = $this->decide('ROLE_ADMIN');
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertSame('At least one voter granted access. The user has the required role.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame('At least one voter granted access. The user has the required role.', $decision->reason);
     }
 
     private function decide(mixed $attribute, mixed $subject = null): AccessDecision
@@ -87,6 +87,8 @@ final class ClosureVoterTest extends TestCase
 
         $manager = new AccessControlManager([new PermitOverridesStrategy()], $voters);
 
-        return $manager->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), $attribute, $subject, new AccessEnvironment(['desk' => 'editorial'])));
+        return $manager->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), $attribute, $subject, new AccessEnvironment([
+            'desk' => 'editorial',
+        ])));
     }
 }

@@ -22,8 +22,6 @@ namespace AccessControl;
  * rename would move the translation to that very seam instead of removing it. And requester says
  * more plainly than subject ever could who is doing the asking.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 readonly class AccessRequest

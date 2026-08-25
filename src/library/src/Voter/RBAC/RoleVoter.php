@@ -8,10 +8,11 @@ use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use function in_array;
+use function is_object;
+use function is_string;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class RoleVoter implements VoterInterface
@@ -24,11 +25,11 @@ final readonly class RoleVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        if (!$this->supportsAttribute($accessRequest->attribute)) {
+        if (! $this->supportsAttribute($accessRequest->attribute)) {
             return AccessOutcome::abstain('The attribute is not a role.');
         }
 
-        if (\in_array($accessRequest->attribute, $this->extractRoles($accessRequest->requester), true)) {
+        if (in_array($accessRequest->attribute, $this->extractRoles($accessRequest->requester), true)) {
             return AccessOutcome::grant('The user has the required role.');
         }
 
@@ -37,7 +38,7 @@ final readonly class RoleVoter implements VoterInterface
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return \is_string($attribute) && str_starts_with($attribute, $this->prefix);
+        return is_string($attribute) && str_starts_with($attribute, $this->prefix);
     }
 
     public function supportsSubject(mixed $subject): bool
@@ -54,7 +55,7 @@ final readonly class RoleVoter implements VoterInterface
 
         if ($requester instanceof TokenInterface) {
             $roles = $requester->getRoleNames();
-        } elseif ($requester instanceof UserWithRoleInterface || (\is_object($requester) && method_exists($requester, 'getRoles'))) {
+        } elseif ($requester instanceof UserWithRoleInterface || (is_object($requester) && method_exists($requester, 'getRoles'))) {
             $roles = $requester->getRoles();
         }
 

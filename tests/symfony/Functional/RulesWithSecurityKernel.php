@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
 use AccessControl\Bundle\AccessControlBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
@@ -22,8 +22,6 @@ use Symfony\Component\Security\Core\User\InMemoryUser;
  * An application migrating will have both for a while, so they have to hold at the same time: the
  * firewall enforcing its own, the component enforcing ours, and the token serving as requester on
  * both sides.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 class RulesWithSecurityKernel extends Kernel
 {
@@ -46,9 +44,9 @@ class RulesWithSecurityKernel extends Kernel
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->import(__DIR__.'/AccessRulesController.php', 'attribute')->prefix('/rules');
-        $routes->import(__DIR__.'/TwigController.php', 'attribute')->prefix('/rules/twig');
-        $routes->import(__DIR__.'/HelperController.php', 'attribute')->prefix('/rules/helper');
+        $routes->import(__DIR__ . '/AccessRulesController.php', 'attribute')->prefix('/rules');
+        $routes->import(__DIR__ . '/TwigController.php', 'attribute')->prefix('/rules/twig');
+        $routes->import(__DIR__ . '/HelperController.php', 'attribute')->prefix('/rules/helper');
     }
 
     /**
@@ -60,32 +58,65 @@ class RulesWithSecurityKernel extends Kernel
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
         ]);
 
         $container->loadFromExtension('security', [
-            'password_hashers' => [InMemoryUser::class => 'plaintext'],
-            'providers' => [
-                'main' => ['memory' => ['users' => [
-                    'alice' => ['password' => 'pa$$word', 'roles' => ['ROLE_ADMIN']],
-                    'bob' => ['password' => 'pa$$word', 'roles' => ['ROLE_USER']],
-                ]]],
+            'password_hashers' => [
+                InMemoryUser::class => 'plaintext',
             ],
-            'firewalls' => ['main' => ['pattern' => '^/', 'http_basic' => null, 'provider' => 'main']],
+            'providers' => [
+                'main' => [
+                    'memory' => [
+                        'users' => [
+                            'alice' => [
+                                'password' => 'pa$$word',
+                                'roles' => ['ROLE_ADMIN'],
+                            ],
+                            'bob' => [
+                                'password' => 'pa$$word',
+                                'roles' => ['ROLE_USER'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'firewalls' => [
+                'main' => [
+                    'pattern' => '^/',
+                    'http_basic' => null,
+                    'provider' => 'main',
+                ],
+            ],
         ]);
 
         $container->loadFromExtension('access_control', [
             'rules' => [
-                ['path' => '^/rules/admin', 'roles' => ['ROLE_ADMIN']],
-                ['path' => '^/rules/local', 'allow_if' => "is_granted('ROLE_ADMIN')"],
-                ['path' => '^/rules/staff', 'roles' => 'ROLE_ADMIN'],
-                ['path' => '^/rules/secure', 'roles' => 'PUBLIC_ACCESS', 'requires_channel' => 'https'],
+                [
+                    'path' => '^/rules/admin',
+                    'roles' => ['ROLE_ADMIN'],
+                ],
+                [
+                    'path' => '^/rules/local',
+                    'allow_if' => "is_granted('ROLE_ADMIN')",
+                ],
+                [
+                    'path' => '^/rules/staff',
+                    'roles' => 'ROLE_ADMIN',
+                ],
+                [
+                    'path' => '^/rules/secure',
+                    'roles' => 'PUBLIC_ACCESS',
+                    'requires_channel' => 'https',
+                ],
             ],
         ]);
 
         $container->loadFromExtension('twig', [
-            'default_path' => __DIR__.'/templates',
+            'default_path' => __DIR__ . '/templates',
             'strict_variables' => true,
         ]);
 
@@ -106,12 +137,12 @@ class RulesWithSecurityKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-rules/secured-cache';
+        return sys_get_temp_dir() . '/access-control-bundle-rules/secured-cache';
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-rules/secured-log';
+        return sys_get_temp_dir() . '/access-control-bundle-rules/secured-log';
     }
 
     protected function build(ContainerBuilder $container): void

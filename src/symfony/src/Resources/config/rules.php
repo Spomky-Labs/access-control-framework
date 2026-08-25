@@ -33,7 +33,9 @@ return static function (ContainerConfigurator $container) {
                 param('request_listener.http_port'),
                 param('request_listener.https_port'),
             ])
-            ->tag('monolog.logger', ['channel' => 'access_control'])
+            ->tag('monolog.logger', [
+                'channel' => 'access_control',
+            ])
             ->tag('kernel.event_subscriber')
     ;
 };

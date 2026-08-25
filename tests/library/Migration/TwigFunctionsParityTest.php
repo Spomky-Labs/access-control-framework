@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Symfony\Bridge\Twig\Extension\SecurityExtension as TwigSecurityExtension;
 use AccessControl\AccessControlManager;
 use AccessControl\Requester\StaticRequesterProvider;
 use AccessControl\RequesterBoundChecker;
@@ -14,6 +11,10 @@ use AccessControl\Strategy\PermitOverridesStrategy;
 use AccessControl\Twig\AccessControlExtension;
 use AccessControl\Voter\ABAC\AuthenticatedVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+use Symfony\Bridge\Twig\Extension\SecurityExtension as TwigSecurityExtension;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -42,9 +43,11 @@ final class TwigFunctionsParityTest extends TestCase
     #[DataProvider('attributes')]
     public function testIsGranted(string $attribute)
     {
-        $this->assertSame(
-            $this->securityExtension()->isGranted($attribute),
-            $this->accessControlExtension()->isGranted($attribute),
+        static::assertSame(
+            $this->securityExtension()
+                ->isGranted($attribute),
+            $this->accessControlExtension()
+                ->isGranted($attribute),
             $attribute,
         );
     }
@@ -54,9 +57,11 @@ final class TwigFunctionsParityTest extends TestCase
     {
         $user = new InMemoryUser('alice', null, ['ROLE_ADMIN']);
 
-        $this->assertSame(
-            $this->securityExtension()->isGrantedForUser($user, $attribute),
-            $this->accessControlExtension()->isGrantedForUser($user, $attribute),
+        static::assertSame(
+            $this->securityExtension()
+                ->isGrantedForUser($user, $attribute),
+            $this->accessControlExtension()
+                ->isGrantedForUser($user, $attribute),
             $attribute,
         );
     }
@@ -74,14 +79,16 @@ final class TwigFunctionsParityTest extends TestCase
         $user = new InMemoryUser('alice', null, ['ROLE_ADMIN']);
 
         try {
-            $this->securityExtension()->isGrantedForUser($user, $attribute);
-            $this->fail('Security should have refused to answer.');
-        } catch (\InvalidArgumentException) {
+            $this->securityExtension()
+                ->isGrantedForUser($user, $attribute);
+            static::fail('Security should have refused to answer.');
+        } catch (InvalidArgumentException) {
         }
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
-        $this->accessControlExtension()->isGrantedForUser($user, $attribute);
+        $this->accessControlExtension()
+            ->isGrantedForUser($user, $attribute);
     }
 
     /**

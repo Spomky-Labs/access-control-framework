@@ -6,12 +6,11 @@ namespace AccessControl;
 
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
+use function sprintf;
 
 /**
  * Every function goes through the access checker, so that an expression and a voter answer the same
  * question the same way, even when the shipped voters have been replaced.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -37,7 +36,7 @@ class ExpressionLanguageProvider implements ExpressionFunctionProviderInterface
             ),
             new ExpressionFunction(
                 'is_granted',
-                static fn ($attribute, $subject = 'null') => \sprintf('$auth_checker->isGranted(%s, %s)', $attribute, $subject),
+                static fn ($attribute, $subject = 'null') => sprintf('$auth_checker->isGranted(%s, %s)', $attribute, $subject),
                 static fn (array $variables, $attribute, $subject = null) => $variables['auth_checker']->isGranted($attribute, $subject),
             ),
         ];

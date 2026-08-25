@@ -7,6 +7,8 @@ namespace AccessControl\Tests\Fixtures\Model;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
+use function is_string;
+use function sprintf;
 
 /**
  * ReBAC: access follows the edges of a graph of relations.
@@ -14,35 +16,35 @@ use AccessControl\VoterInterface;
  * A tuple binds an object and a relation to either an identity or another "object#relation" pair,
  * so that membership is reached indirectly, as in the Zanzibar model.
  */
-final class RelationshipVoter implements VoterInterface
+final readonly class RelationshipVoter implements VoterInterface
 {
     /**
      * @param array<string, list<string>> $tuples Members, indexed by "object#relation"
      */
     public function __construct(
-        private readonly array $tuples,
+        private array $tuples,
     ) {
     }
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return \is_string($attribute);
+        return is_string($attribute);
     }
 
     public function supportsSubject(mixed $subject): bool
     {
-        return \is_string($subject);
+        return is_string($subject);
     }
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        if (!\is_string($accessRequest->requester) || !\is_string($accessRequest->subject)) {
+        if (! is_string($accessRequest->requester) || ! is_string($accessRequest->subject)) {
             return AccessOutcome::abstain('The request carries no identity or no object.');
         }
 
         return $this->isRelated($accessRequest->subject, $accessRequest->attribute, $accessRequest->requester)
-            ? AccessOutcome::grant(\sprintf('"%s" is a "%s" of "%s".', $accessRequest->requester, $accessRequest->attribute, $accessRequest->subject))
-            : AccessOutcome::deny(\sprintf('No "%s" relation ties "%s" to "%s".', $accessRequest->attribute, $accessRequest->requester, $accessRequest->subject));
+            ? AccessOutcome::grant(sprintf('"%s" is a "%s" of "%s".', $accessRequest->requester, $accessRequest->attribute, $accessRequest->subject))
+            : AccessOutcome::deny(sprintf('No "%s" relation ties "%s" to "%s".', $accessRequest->attribute, $accessRequest->requester, $accessRequest->subject));
     }
 
     /**
@@ -50,7 +52,7 @@ final class RelationshipVoter implements VoterInterface
      */
     private function isRelated(string $object, string $relation, string $identity, array &$visited = []): bool
     {
-        $key = $object.'#'.$relation;
+        $key = $object . '#' . $relation;
 
         if (isset($visited[$key])) {
             return false;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
 use AccessControl\Bundle\AccessControlBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
@@ -31,10 +31,15 @@ class MigrationParityKernel extends Kernel
     use MicroKernelTrait;
 
     public const SECURITY = 'security';
+
     public const BOTH = 'both';
+
     public const ACCESS_CONTROL = 'access_control';
 
-    private const RULE = ['path' => '^/guarded-by-a-rule', 'roles' => ['ROLE_ADMIN']];
+    private const array RULE = [
+        'path' => '^/guarded-by-a-rule',
+        'roles' => ['ROLE_ADMIN'],
+    ];
 
     /**
      * @param self::* $shape which bundles are registered
@@ -50,24 +55,31 @@ class MigrationParityKernel extends Kernel
         yield new FrameworkBundle();
         yield new TwigBundle();
 
-        if (self::ACCESS_CONTROL !== $this->shape) {
+        if ($this->shape !== self::ACCESS_CONTROL) {
             yield new SecurityBundle();
         }
 
-        if (self::SECURITY !== $this->shape) {
+        if ($this->shape !== self::SECURITY) {
             yield new AccessControlBundle();
         }
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->add('rule', '/guarded-by-a-rule')->controller([MigrationParityController::class, 'guardedByARule']);
-        $routes->add('attribute', '/guarded-by-the-attribute')->controller([MigrationParityController::class, 'guardedByTheAttribute']);
-        $routes->add('template', '/template')->controller([MigrationParityController::class, 'template']);
-        $routes->add('security_only', '/security-only')->controller([MigrationParityController::class, 'templateOfSecurityOnlyFunctions']);
-        $routes->add('component_decision', '/component-decision')->controller([MigrationParityController::class, 'templateOfTheComponentsDecision']);
-        $routes->add('helper_is_granted', '/helper/is-granted')->controller([MigrationParityController::class, 'helperIsGranted']);
-        $routes->add('helper_deny_unless', '/helper/deny-unless')->controller([MigrationParityController::class, 'helperDenyUnlessGranted']);
+        $routes->add('rule', '/guarded-by-a-rule')
+            ->controller([MigrationParityController::class, 'guardedByARule']);
+        $routes->add('attribute', '/guarded-by-the-attribute')
+            ->controller([MigrationParityController::class, 'guardedByTheAttribute']);
+        $routes->add('template', '/template')
+            ->controller([MigrationParityController::class, 'template']);
+        $routes->add('security_only', '/security-only')
+            ->controller([MigrationParityController::class, 'templateOfSecurityOnlyFunctions']);
+        $routes->add('component_decision', '/component-decision')
+            ->controller([MigrationParityController::class, 'templateOfTheComponentsDecision']);
+        $routes->add('helper_is_granted', '/helper/is-granted')
+            ->controller([MigrationParityController::class, 'helperIsGranted']);
+        $routes->add('helper_deny_unless', '/helper/deny-unless')
+            ->controller([MigrationParityController::class, 'helperDenyUnlessGranted']);
     }
 
     /**
@@ -79,33 +91,59 @@ class MigrationParityKernel extends Kernel
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
-            'profiler' => ['only_exceptions' => false],
+            'profiler' => [
+                'only_exceptions' => false,
+            ],
         ]);
 
         $container->loadFromExtension('twig', [
-            'default_path' => __DIR__.'/templates',
+            'default_path' => __DIR__ . '/templates',
             'strict_variables' => true,
         ]);
 
-        if (self::ACCESS_CONTROL !== $this->shape) {
+        if ($this->shape !== self::ACCESS_CONTROL) {
             $container->loadFromExtension('security', [
-                'password_hashers' => [InMemoryUser::class => 'plaintext'],
-                'providers' => ['main' => ['memory' => ['users' => [
-                    'alice' => ['password' => 'pa$$word', 'roles' => ['ROLE_ADMIN']],
-                    'bob' => ['password' => 'pa$$word', 'roles' => ['ROLE_USER']],
-                ]]]],
-                'firewalls' => ['main' => ['pattern' => '^/', 'http_basic' => null, 'provider' => 'main']],
+                'password_hashers' => [
+                    InMemoryUser::class => 'plaintext',
+                ],
+                'providers' => [
+                    'main' => [
+                        'memory' => [
+                            'users' => [
+                                'alice' => [
+                                    'password' => 'pa$$word',
+                                    'roles' => ['ROLE_ADMIN'],
+                                ],
+                                'bob' => [
+                                    'password' => 'pa$$word',
+                                    'roles' => ['ROLE_USER'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'firewalls' => [
+                    'main' => [
+                        'pattern' => '^/',
+                        'http_basic' => null,
+                        'provider' => 'main',
+                    ],
+                ],
                 'access_control' => [self::RULE],
             ]);
         }
 
-        if (self::SECURITY !== $this->shape) {
-            $container->loadFromExtension('access_control', self::ACCESS_CONTROL === $this->shape ? ['rules' => [self::RULE]] : []);
+        if ($this->shape !== self::SECURITY) {
+            $container->loadFromExtension('access_control', $this->shape === self::ACCESS_CONTROL ? [
+                'rules' => [self::RULE],
+            ] : []);
         }
 
-        if (self::ACCESS_CONTROL === $this->shape) {
+        if ($this->shape === self::ACCESS_CONTROL) {
             $container->register('test.requester_provider', HeaderRequesterProvider::class)
                 ->setArguments([new Reference('request_stack')]);
             $container->setAlias('access_control.requester_provider', 'test.requester_provider');
@@ -120,12 +158,12 @@ class MigrationParityKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-migration/'.$this->shape;
+        return sys_get_temp_dir() . '/access-control-bundle-migration/' . $this->shape;
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-migration/log';
+        return sys_get_temp_dir() . '/access-control-bundle-migration/log';
     }
 
     protected function build(ContainerBuilder $container): void

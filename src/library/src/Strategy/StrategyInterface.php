@@ -9,8 +9,6 @@ use AccessControl\AccessRequest;
 use AccessControl\CastVote;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 interface StrategyInterface

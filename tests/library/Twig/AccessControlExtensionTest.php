@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Twig;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessControlManagerInterface;
 use AccessControl\Requester\StaticRequesterProvider;
@@ -16,6 +14,10 @@ use AccessControl\Tests\Fixtures\PublishedPostVoter;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Twig\AccessControlExtension;
 use AccessControl\Voter\RBAC\RoleVoter;
+use InvalidArgumentException;
+use LogicException;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
@@ -33,7 +35,7 @@ final class AccessControlExtensionTest extends TestCase
     {
         $names = array_map(static fn ($function) => $function->getName(), $this->createExtension()->getFunctions());
 
-        $this->assertSame([
+        static::assertSame([
             'is_granted',
             'is_granted_for_user',
             'access_control_decision',
@@ -43,12 +45,12 @@ final class AccessControlExtensionTest extends TestCase
 
     public function testARoleTheRequesterHolds()
     {
-        $this->assertTrue($this->createExtension()->isGranted('ROLE_ADMIN'));
+        static::assertTrue($this->createExtension()->isGranted('ROLE_ADMIN'));
     }
 
     public function testARoleTheRequesterDoesNotHold()
     {
-        $this->assertFalse($this->createExtension()->isGranted('ROLE_SUPER_ADMIN'));
+        static::assertFalse($this->createExtension()->isGranted('ROLE_SUPER_ADMIN'));
     }
 
     /**
@@ -56,15 +58,15 @@ final class AccessControlExtensionTest extends TestCase
      */
     public function testNoRequesterAtAllIsNotAnError()
     {
-        $this->assertFalse($this->createExtension(null)->isGranted('ROLE_ADMIN'));
+        static::assertFalse($this->createExtension(null)->isGranted('ROLE_ADMIN'));
     }
 
     public function testTheSubjectReachesTheVoter()
     {
         $extension = $this->createExtension();
 
-        $this->assertTrue($extension->isGranted('read', new Post(published: true)));
-        $this->assertFalse($extension->isGranted('read', new Post(published: false)));
+        static::assertTrue($extension->isGranted('read', new Post(published: true)));
+        static::assertFalse($extension->isGranted('read', new Post(published: false)));
     }
 
     /**
@@ -75,8 +77,8 @@ final class AccessControlExtensionTest extends TestCase
     {
         $extension = $this->createExtension(new StandaloneRequester(['ROLE_USER']));
 
-        $this->assertFalse($extension->isGranted('ROLE_ADMIN'));
-        $this->assertTrue($extension->isGrantedForUser(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
+        static::assertFalse($extension->isGranted('ROLE_ADMIN'));
+        static::assertTrue($extension->isGrantedForUser(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
     }
 
     public function testTheFunctionsAnswerFromATemplate()
@@ -86,7 +88,7 @@ final class AccessControlExtensionTest extends TestCase
         ]));
         $twig->addExtension($this->createExtension());
 
-        $this->assertSame('yes/no', $twig->render('page'));
+        static::assertSame('yes/no', $twig->render('page'));
     }
 
     /**
@@ -95,17 +97,19 @@ final class AccessControlExtensionTest extends TestCase
      */
     public function testAFieldIsRefusedRatherThanQuietlyDenied()
     {
-        $this->expectException(\LogicException::class);
-        $this->expectExceptionMessage('field level access control');
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessageIsOrContains('field level access control');
 
-        $this->createExtension()->isGranted('ROLE_ADMIN', null, 'title');
+        $this->createExtension()
+            ->isGranted('ROLE_ADMIN', null, 'title');
     }
 
     public function testAFieldIsRefusedForAnotherRequesterToo()
     {
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
 
-        $this->createExtension()->isGrantedForUser(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN', null, 'title');
+        $this->createExtension()
+            ->isGrantedForUser(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN', null, 'title');
     }
 
     /**
@@ -128,11 +132,11 @@ final class AccessControlExtensionTest extends TestCase
     {
         $extension = $this->createExtension();
 
-        $this->assertSame($expected, $extension->isGranted($attribute));
-        $this->assertSame($expected, $extension->decision($attribute)->isGranted());
+        static::assertSame($expected, $extension->isGranted($attribute));
+        static::assertSame($expected, $extension->decision($attribute)->isGranted());
 
         $other = new StandaloneRequester(['ROLE_ADMIN']);
-        $this->assertSame($extension->isGrantedForUser($other, $attribute), $extension->decisionForUser($other, $attribute)->isGranted());
+        static::assertSame($extension->isGrantedForUser($other, $attribute), $extension->decisionForUser($other, $attribute)->isGranted());
     }
 
     /**
@@ -146,7 +150,7 @@ final class AccessControlExtensionTest extends TestCase
         ]));
         $twig->addExtension($this->createExtension());
 
-        $this->assertSame('no/ACCESS_DENIED/voted', $twig->render('page'));
+        static::assertSame('no/ACCESS_DENIED/voted', $twig->render('page'));
     }
 
     /**
@@ -155,10 +159,11 @@ final class AccessControlExtensionTest extends TestCase
      */
     public function testAnAuthenticationStateIsRefusedForAnotherRequesterHereToo()
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('IS_AUTHENTICATED_FULLY');
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageIsOrContains('IS_AUTHENTICATED_FULLY');
 
-        $this->createExtension()->decisionForUser(new StandaloneRequester(['ROLE_ADMIN']), 'IS_AUTHENTICATED_FULLY');
+        $this->createExtension()
+            ->decisionForUser(new StandaloneRequester(['ROLE_ADMIN']), 'IS_AUTHENTICATED_FULLY');
     }
 
     private function createExtension(mixed $requester = new StandaloneRequester(['ROLE_ADMIN'])): AccessControlExtension

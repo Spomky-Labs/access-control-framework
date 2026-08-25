@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AccessControl;
 
+use function is_array;
+
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 readonly class AccessDecision
@@ -30,11 +30,11 @@ readonly class AccessDecision
         iterable $votes,
         ?string $summary = null,
     ) {
-        $this->votes = \is_array($votes) ? array_values($votes) : iterator_to_array($votes, false);
+        $this->votes = is_array($votes) ? array_values($votes) : iterator_to_array($votes, false);
 
         $reasons = [];
         foreach ($this->votes as $vote) {
-            if ($vote->outcome->decision === $decision && null !== $vote->outcome->reason) {
+            if ($vote->outcome->decision === $decision && $vote->outcome->reason !== null) {
                 $reasons[$vote->outcome->reason] = true;
             }
         }
@@ -51,7 +51,7 @@ readonly class AccessDecision
      */
     public function isGranted(): bool
     {
-        return DecisionVote::ACCESS_GRANTED === $this->decision;
+        return $this->decision === DecisionVote::ACCESS_GRANTED;
     }
 
     /**

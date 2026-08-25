@@ -8,6 +8,7 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\CacheableVoterInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
+use function in_array;
 
 /**
  * The voter an application writes, untouched by the migration. It must keep being consulted once
@@ -17,7 +18,7 @@ class SecurityApplicationVoter implements VoterInterface, CacheableVoterInterfac
 {
     public function supportsAttribute(string $attribute): bool
     {
-        return 'APP_PERMISSION' === $attribute;
+        return $attribute === 'APP_PERMISSION';
     }
 
     public function supportsType(string $subjectType): bool
@@ -27,11 +28,11 @@ class SecurityApplicationVoter implements VoterInterface, CacheableVoterInterfac
 
     public function vote(TokenInterface $token, mixed $subject, array $attributes, ?Vote $vote = null): int
     {
-        if (!\in_array('APP_PERMISSION', $attributes, true)) {
+        if (! in_array('APP_PERMISSION', $attributes, true)) {
             return self::ACCESS_ABSTAIN;
         }
 
-        if ('alice' === $token->getUserIdentifier()) {
+        if ($token->getUserIdentifier() === 'alice') {
             $vote?->addReason('Alice carries the application permission.');
 
             return self::ACCESS_GRANTED;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
 use AccessControl\Bundle\AccessControlBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
@@ -27,7 +27,9 @@ class WorkflowGuardKernel extends Kernel
     use MicroKernelTrait;
 
     public const SECURITY = 'security';
+
     public const BOTH = 'both';
+
     public const ACCESS_CONTROL = 'access_control';
 
     /**
@@ -44,11 +46,11 @@ class WorkflowGuardKernel extends Kernel
     {
         yield new FrameworkBundle();
 
-        if (self::ACCESS_CONTROL !== $this->shape) {
+        if ($this->shape !== self::ACCESS_CONTROL) {
             yield new SecurityBundle();
         }
 
-        if (self::SECURITY !== $this->shape) {
+        if ($this->shape !== self::SECURITY) {
             yield new AccessControlBundle();
         }
     }
@@ -71,13 +73,21 @@ class WorkflowGuardKernel extends Kernel
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
-            'validation' => ['enabled' => true, 'enable_attributes' => true],
+            'validation' => [
+                'enabled' => true,
+                'enable_attributes' => true,
+            ],
             'workflows' => [
                 'article' => [
                     'type' => 'state_machine',
-                    'marking_store' => ['type' => 'method', 'property' => 'marking'],
+                    'marking_store' => [
+                        'type' => 'method',
+                        'property' => 'marking',
+                    ],
                     'supports' => [Article::class],
                     'initial_marking' => 'draft',
                     'places' => ['draft', 'published', 'discarded'],
@@ -97,30 +107,48 @@ class WorkflowGuardKernel extends Kernel
             ],
         ]);
 
-        if (self::ACCESS_CONTROL !== $this->shape) {
+        if ($this->shape !== self::ACCESS_CONTROL) {
             $container->loadFromExtension('security', [
-                'password_hashers' => [InMemoryUser::class => 'plaintext'],
-                'providers' => ['main' => ['memory' => ['users' => [
-                    'alice' => ['password' => 'pa$$word', 'roles' => ['ROLE_ADMIN']],
-                ]]]],
-                'firewalls' => ['main' => ['pattern' => '^/', 'http_basic' => null, 'provider' => 'main']],
+                'password_hashers' => [
+                    InMemoryUser::class => 'plaintext',
+                ],
+                'providers' => [
+                    'main' => [
+                        'memory' => [
+                            'users' => [
+                                'alice' => [
+                                    'password' => 'pa$$word',
+                                    'roles' => ['ROLE_ADMIN'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'firewalls' => [
+                    'main' => [
+                        'pattern' => '^/',
+                        'http_basic' => null,
+                        'provider' => 'main',
+                    ],
+                ],
             ]);
         }
 
         $container->register(PermissionVoter::class, PermissionVoter::class)
             ->setAutoconfigured(true);
 
-        $container->setAlias('test.workflow.article', 'state_machine.article')->setPublic(true);
+        $container->setAlias('test.workflow.article', 'state_machine.article')
+            ->setPublic(true);
     }
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-workflow/'.$this->shape.'/'.md5($this->guard);
+        return sys_get_temp_dir() . '/access-control-bundle-workflow/' . $this->shape . '/' . md5($this->guard);
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-workflow/log';
+        return sys_get_temp_dir() . '/access-control-bundle-workflow/log';
     }
 
     protected function build(ContainerBuilder $container): void

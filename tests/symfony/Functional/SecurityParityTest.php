@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
+use AccessControl\Bridge\Security\RoleHierarchyAdapter;
+use AccessControl\Bundle\Test\AccessControlAssertionsTrait;
+use AccessControl\Voter\RBAC\RoleVoter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
-use AccessControl\Bundle\Test\AccessControlAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use AccessControl\Bridge\Security\RoleHierarchyAdapter;
-use AccessControl\Voter\RBAC\RoleVoter;
 use Symfony\Component\HttpKernel\KernelInterface;
+use function sprintf;
 
 /**
  * The same application with and without this bundle registered.
@@ -22,7 +23,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * honest way to compare: inside the switched application both attributes run on the same engine, so
  * nothing there could prove a parity.
  */
-class SecurityParityTest extends WebTestCase
+final class SecurityParityTest extends WebTestCase
 {
     use AccessControlAssertionsTrait;
 
@@ -51,11 +52,11 @@ class SecurityParityTest extends WebTestCase
     #[DataProvider('provideQuestions')]
     public function testAnIsGrantedControllerAnswersAlikeBeforeAndAfterTheSwitch(string $route, string $user, int $expected)
     {
-        $before = $this->statusOf(false, '/security/'.$route, $user);
-        $after = $this->statusOf(true, '/security/'.$route, $user);
+        $before = $this->statusOf(false, '/security/' . $route, $user);
+        $after = $this->statusOf(true, '/security/' . $route, $user);
 
-        $this->assertSame($expected, $before, \sprintf('Security answered %d on "%s".', $before, $route));
-        $this->assertSame($before, $after, \sprintf('The switch changed the answer on "%s" for "%s".', $route, $user));
+        static::assertSame($expected, $before, sprintf('Security answered %d on "%s".', $before, $route));
+        static::assertSame($before, $after, sprintf('The switch changed the answer on "%s" for "%s".', $route, $user));
     }
 
     /**
@@ -66,11 +67,11 @@ class SecurityParityTest extends WebTestCase
     #[DataProvider('provideQuestions')]
     public function testTheTwoAttributesAgreeOnceSwitched(string $route, string $user, int $expected)
     {
-        $isGranted = $this->statusOf(true, '/security/'.$route, $user);
-        $accessPolicy = $this->statusOf(true, '/access-control/'.$route, $user);
+        $isGranted = $this->statusOf(true, '/security/' . $route, $user);
+        $accessPolicy = $this->statusOf(true, '/access-control/' . $route, $user);
 
-        $this->assertSame($expected, $isGranted);
-        $this->assertSame($isGranted, $accessPolicy, \sprintf('The two attributes disagree on "%s" for "%s".', $route, $user));
+        static::assertSame($expected, $isGranted);
+        static::assertSame($isGranted, $accessPolicy, sprintf('The two attributes disagree on "%s" for "%s".', $route, $user));
     }
 
     /**
@@ -104,8 +105,12 @@ class SecurityParityTest extends WebTestCase
     public static function provideMatchingRules(): iterable
     {
         yield 'a method rule that matches' => ['POST', '/by-method', [], 403];
-        yield 'an ip rule that matches' => ['GET', '/by-ip', ['REMOTE_ADDR' => '10.0.0.1'], 403];
-        yield 'a host rule that matches' => ['GET', '/by-host', ['HTTP_HOST' => 'forbidden.example.com'], 403];
+        yield 'an ip rule that matches' => ['GET', '/by-ip', [
+            'REMOTE_ADDR' => '10.0.0.1',
+        ], 403];
+        yield 'a host rule that matches' => ['GET', '/by-host', [
+            'HTTP_HOST' => 'forbidden.example.com',
+        ], 403];
         yield 'a channel rule that matches' => ['GET', '/secure-channel', [], 301];
     }
 
@@ -119,8 +124,8 @@ class SecurityParityTest extends WebTestCase
         $before = $this->statusOf(false, $path, 'bob', $method, $server);
         $after = $this->statusOf(true, $path, 'bob', $method, $server);
 
-        $this->assertSame($expected, $before, \sprintf('Security answered %d on "%s".', $before, $path));
-        $this->assertSame($before, $after, \sprintf('The switch changed the answer on "%s".', $path));
+        static::assertSame($expected, $before, sprintf('Security answered %d on "%s".', $before, $path));
+        static::assertSame($before, $after, sprintf('The switch changed the answer on "%s".', $path));
     }
 
     /**
@@ -134,8 +139,8 @@ class SecurityParityTest extends WebTestCase
         $before = $this->statusOf(false, $path, $user);
         $after = $this->statusOf(true, $path, $user);
 
-        $this->assertSame($expected, $before, \sprintf('Security answered %d on "%s".', $before, $path));
-        $this->assertSame($before, $after, \sprintf('The switch changed the answer on "%s" for "%s".', $path, $user));
+        static::assertSame($expected, $before, sprintf('Security answered %d on "%s".', $before, $path));
+        static::assertSame($before, $after, sprintf('The switch changed the answer on "%s" for "%s".', $path, $user));
     }
 
     /**
@@ -147,7 +152,7 @@ class SecurityParityTest extends WebTestCase
         $client = $this->clientFor(true);
         $client->request('GET', '/dashboard/admin', [], [], $this->credentials('bob'));
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
     }
 
@@ -160,13 +165,13 @@ class SecurityParityTest extends WebTestCase
         $client = $this->clientFor(true);
 
         $client->request('GET', '/either', [], [], $this->credentials('bob'));
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
         $this->assertAccessWasDeniedOn('ROLE_MANAGER');
 
         $client->request('GET', '/allow-if', [], [], $this->credentials('bob'));
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
-        $this->assertNotEmpty(self::getAccessDecisionEvents()->getDecisions());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertNotEmpty(self::getAccessDecisionEvents()->getDecisions());
     }
 
     private function statusOf(bool $switched, string $path, string $user, string $method = 'GET', array $server = []): int
@@ -174,7 +179,8 @@ class SecurityParityTest extends WebTestCase
         $client = $this->clientFor($switched);
         $client->request($method, $path, [], [], $server + $this->credentials($user));
 
-        return $client->getResponse()->getStatusCode();
+        return $client->getResponse()
+            ->getStatusCode();
     }
 
     /**
@@ -197,7 +203,7 @@ class SecurityParityTest extends WebTestCase
         $client = $this->clientFor(true);
         $client->request('GET', '/access-control/held-role', [], [], $this->credentials('alice'));
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
         $this->assertAccessWasGrantedOn('ROLE_USER');
     }
 
@@ -216,8 +222,8 @@ class SecurityParityTest extends WebTestCase
         $client = $this->clientFor(true);
         $client->request('GET', $path);
 
-        $this->assertSame(401, $client->getResponse()->getStatusCode());
-        $this->assertSame('Basic realm="Secured Area"', $client->getResponse()->headers->get('WWW-Authenticate'));
+        static::assertSame(401, $client->getResponse()->getStatusCode());
+        static::assertSame('Basic realm="Secured Area"', $client->getResponse()->headers->get('WWW-Authenticate'));
     }
 
     /**
@@ -228,14 +234,17 @@ class SecurityParityTest extends WebTestCase
     public function testTheTwoStacksShareOneRoleHierarchy()
     {
         $client = $this->clientFor(true);
-        $container = $client->getContainer()->get('test.service_container');
+        $container = $client->getContainer()
+            ->get('test.service_container');
 
-        $this->assertInstanceOf(RoleHierarchyAdapter::class, $container->get('access_control.role_hierarchy'));
-        $this->assertSame(
-            $container->get('security.role_hierarchy')->getReachableRoleNames(['ROLE_ADMIN']),
-            $container->get('access_control.role_hierarchy')->getReachableRoleNames(['ROLE_ADMIN']),
+        static::assertInstanceOf(RoleHierarchyAdapter::class, $container->get('access_control.role_hierarchy'));
+        static::assertSame(
+            $container->get('security.role_hierarchy')
+                ->getReachableRoleNames(['ROLE_ADMIN']),
+            $container->get('access_control.role_hierarchy')
+                ->getReachableRoleNames(['ROLE_ADMIN']),
         );
-        $this->assertSame(['ROLE_ADMIN', 'ROLE_USER'], $container->get('access_control.role_hierarchy')->getReachableRoleNames(['ROLE_ADMIN']));
+        static::assertSame(['ROLE_ADMIN', 'ROLE_USER'], $container->get('access_control.role_hierarchy')->getReachableRoleNames(['ROLE_ADMIN']));
     }
 
     /**
@@ -246,13 +255,16 @@ class SecurityParityTest extends WebTestCase
         $client = $this->clientFor(true);
         $client->request('GET', '/access-control/unreachable-role', [], [], $this->credentials('alice'));
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('ROLE_SUPER_ADMIN');
         $this->assertAccessWasDeniedBy(RoleVoter::class);
     }
 
     private function credentials(string $user): array
     {
-        return ['PHP_AUTH_USER' => $user, 'PHP_AUTH_PW' => 'pa$$word'];
+        return [
+            'PHP_AUTH_USER' => $user,
+            'PHP_AUTH_PW' => 'pa$$word',
+        ];
     }
 }

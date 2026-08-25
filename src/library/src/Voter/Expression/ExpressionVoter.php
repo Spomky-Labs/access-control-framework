@@ -19,10 +19,10 @@ use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolverInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use function is_object;
+use function sprintf;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class ExpressionVoter implements VoterInterface
@@ -47,15 +47,15 @@ final readonly class ExpressionVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        if (!$accessRequest->attribute instanceof Expression) {
+        if (! $accessRequest->attribute instanceof Expression) {
             return AccessOutcome::abstain('The attribute is not an expression.');
         }
 
         if ($this->expressionLanguage->evaluate($accessRequest->attribute, $this->getVariables($accessRequest))) {
-            return AccessOutcome::grant(\sprintf('Expression (%s) is true.', $accessRequest->attribute));
+            return AccessOutcome::grant(sprintf('Expression (%s) is true.', $accessRequest->attribute));
         }
 
-        return AccessOutcome::deny(\sprintf('Expression (%s) is false.', $accessRequest->attribute));
+        return AccessOutcome::deny(sprintf('Expression (%s) is false.', $accessRequest->attribute));
     }
 
     /**
@@ -70,15 +70,15 @@ final readonly class ExpressionVoter implements VoterInterface
     private function getVariables(AccessRequest $accessRequest): array
     {
         $token = $accessRequest->requester instanceof TokenInterface ? $accessRequest->requester : null;
-        $user = null !== $token ? $token->getUser() : $accessRequest->requester;
+        $user = $token !== null ? $token->getUser() : $accessRequest->requester;
         $roleNames = [];
-        if (null !== $token) {
+        if ($token !== null) {
             $roleNames = $token->getRoleNames();
-        } elseif ($user instanceof UserWithRoleInterface || (\is_object($user) && method_exists($user, 'getRoles'))) {
+        } elseif ($user instanceof UserWithRoleInterface || (is_object($user) && method_exists($user, 'getRoles'))) {
             $roleNames = $user->getRoles();
         }
 
-        if (null !== $this->roleHierarchy) {
+        if ($this->roleHierarchy !== null) {
             $roleNames = $this->roleHierarchy->getReachableRoleNames($roleNames);
         }
 
@@ -96,7 +96,7 @@ final readonly class ExpressionVoter implements VoterInterface
             $variables['actor'] = $actor;
         }
 
-        if (null !== $this->trustResolver) {
+        if ($this->trustResolver !== null) {
             $variables['trust_resolver'] = $this->trustResolver;
         }
 

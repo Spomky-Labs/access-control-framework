@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
 use AccessControl\Bundle\AccessControlBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\Config\Loader\LoaderInterface;
@@ -16,8 +16,6 @@ use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 /**
  * An application that has no Security at all, which is half the point of the component being
  * independent.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 class AccessControlKernel extends Kernel
 {
@@ -27,8 +25,9 @@ class AccessControlKernel extends Kernel
      * @param bool $withExitCodeListener registers the listener an application writes when it wants
      *                                   an exit code of its own on a console denial
      */
-    public function __construct(private readonly bool $withExitCodeListener = false)
-    {
+    public function __construct(
+        private readonly bool $withExitCodeListener = false
+    ) {
         parent::__construct('test', true);
     }
 
@@ -42,7 +41,7 @@ class AccessControlKernel extends Kernel
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->import(__DIR__.'/AccessControlController.php', 'attribute')->prefix('/access-control');
+        $routes->import(__DIR__ . '/AccessControlController.php', 'attribute')->prefix('/access-control');
     }
 
     /**
@@ -53,9 +52,13 @@ class AccessControlKernel extends Kernel
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
-            'profiler' => ['only_exceptions' => false],
+            'profiler' => [
+                'only_exceptions' => false,
+            ],
         ]);
 
         $container->register(PermissionVoter::class, PermissionVoter::class)
@@ -76,12 +79,12 @@ class AccessControlKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle/cache'.($this->withExitCodeListener ? '-exit-code' : '');
+        return sys_get_temp_dir() . '/access-control-bundle/cache' . ($this->withExitCodeListener ? '-exit-code' : '');
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle/log';
+        return sys_get_temp_dir() . '/access-control-bundle/log';
     }
 
     protected function build(ContainerBuilder $container): void

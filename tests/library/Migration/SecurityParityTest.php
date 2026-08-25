@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessControlManagerInterface;
 use AccessControl\AccessRequest;
@@ -24,6 +22,9 @@ use AccessControl\Voter\ClosureVoter;
 use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleVoter;
+use IteratorAggregate;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolverInterface;
@@ -51,6 +52,8 @@ use Symfony\Component\Security\Core\Role\RoleHierarchyInterface as SecurityRoleH
 use Symfony\Component\Security\Core\User\InMemoryUser;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Attribute\IsGrantedContext;
+use Traversable;
+use function sprintf;
 
 /**
  * Runs the same question through Security and through this component, and asserts they answer alike.
@@ -60,7 +63,7 @@ use Symfony\Component\Security\Http\Attribute\IsGrantedContext;
  */
 final class SecurityParityTest extends TestCase
 {
-    private const HIERARCHY = [
+    private const array HIERARCHY = [
         'ROLE_ADMIN' => ['ROLE_USER'],
         'ROLE_SUPER_ADMIN' => ['ROLE_ADMIN', 'ROLE_ALLOWED_TO_SWITCH'],
     ];
@@ -185,16 +188,20 @@ final class SecurityParityTest extends TestCase
      */
     public function testAClosureAttribute(): void
     {
-        $this->assertTrue($this->security()->isGranted(static fn (IsGrantedContext $context, mixed $subject): bool => $context->isGranted('ROLE_ADMIN')));
-        $this->assertSame(
+        static::assertTrue($this->security()->isGranted(static fn (IsGrantedContext $context, mixed $subject): bool => $context->isGranted('ROLE_ADMIN')));
+        static::assertSame(
             DecisionVote::ACCESS_GRANTED,
-            $this->accessControl()->decide(new AccessRequest($this->token, static fn (AccessRequest $accessRequest, RequesterBoundChecker $checker): bool => $checker->isGranted('ROLE_ADMIN')))->decision,
+            $this->accessControl()
+                ->decide(new AccessRequest($this->token, static fn (AccessRequest $accessRequest, RequesterBoundChecker $checker): bool => $checker->isGranted('ROLE_ADMIN')))
+                ->decision,
         );
 
-        $this->assertFalse($this->security()->isGranted(static fn (IsGrantedContext $context, mixed $subject): bool => $context->isGranted('ROLE_SUPER_ADMIN')));
-        $this->assertSame(
+        static::assertFalse($this->security()->isGranted(static fn (IsGrantedContext $context, mixed $subject): bool => $context->isGranted('ROLE_SUPER_ADMIN')));
+        static::assertSame(
             DecisionVote::ACCESS_DENIED,
-            $this->accessControl()->decide(new AccessRequest($this->token, static fn (AccessRequest $accessRequest, RequesterBoundChecker $checker): bool => $checker->isGranted('ROLE_SUPER_ADMIN')))->decision,
+            $this->accessControl()
+                ->decide(new AccessRequest($this->token, static fn (AccessRequest $accessRequest, RequesterBoundChecker $checker): bool => $checker->isGranted('ROLE_SUPER_ADMIN')))
+                ->decision,
         );
     }
 
@@ -252,15 +259,17 @@ final class SecurityParityTest extends TestCase
         $someoneElse = new InMemoryUser('alice', null, ['ROLE_SUPER_ADMIN']);
 
         try {
-            $this->security()->isGrantedForUser($someoneElse, 'IS_AUTHENTICATED_FULLY');
-            $this->fail('Security should have refused to answer.');
+            $this->security()
+                ->isGrantedForUser($someoneElse, 'IS_AUTHENTICATED_FULLY');
+            static::fail('Security should have refused to answer.');
         } catch (InvalidArgumentException) {
         }
 
-        $decision = $this->accessControl()->decide(new AccessRequest($someoneElse, 'IS_AUTHENTICATED_FULLY'));
+        $decision = $this->accessControl()
+            ->decide(new AccessRequest($someoneElse, 'IS_AUTHENTICATED_FULLY'));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertStringContainsString('The requester is not an instance of TokenInterface.', (string) $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertStringContainsString('The requester is not an instance of TokenInterface.', (string) $decision->reason);
     }
 
     /**
@@ -286,7 +295,8 @@ final class SecurityParityTest extends TestCase
         $this->token = $this->createOfflineToken();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->accessControl()->decide(new AccessRequest($this->token, 'IS_AUTHENTICATED_FULLY'));
+        $this->accessControl()
+            ->decide(new AccessRequest($this->token, 'IS_AUTHENTICATED_FULLY'));
     }
 
     public function testSecurityAlsoRefusesAuthenticationQuestionsAboutAnOfflineToken(): void
@@ -294,7 +304,8 @@ final class SecurityParityTest extends TestCase
         $this->token = $this->createOfflineToken();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->security()->isGranted('IS_AUTHENTICATED_FULLY');
+        $this->security()
+            ->isGranted('IS_AUTHENTICATED_FULLY');
     }
 
     private function createOfflineToken(): TokenInterface
@@ -307,25 +318,29 @@ final class SecurityParityTest extends TestCase
 
     private function assertGrantedAlikeFor(UserInterface $user, mixed $attribute, mixed $subject = null): void
     {
-        $securityGranted = $this->security()->isGrantedForUser($user, $attribute, $subject);
-        $decision = $this->accessControl()->decide(new AccessRequest($user, $attribute, $subject));
+        $securityGranted = $this->security()
+            ->isGrantedForUser($user, $attribute, $subject);
+        $decision = $this->accessControl()
+            ->decide(new AccessRequest($user, $attribute, $subject));
 
-        $this->assertSame(
+        static::assertSame(
             $securityGranted,
-            DecisionVote::ACCESS_GRANTED === $decision->decision,
-            \sprintf('Security and AccessControl disagree on "%s" for another requester.', var_export($attribute, true)),
+            $decision->decision === DecisionVote::ACCESS_GRANTED,
+            sprintf('Security and AccessControl disagree on "%s" for another requester.', var_export($attribute, true)),
         );
     }
 
     private function assertGrantedAlike(mixed $attribute, mixed $subject = null, ?string $strategy = null): void
     {
-        $securityGranted = $this->security($strategy)->isGranted($attribute, $subject);
-        $decision = $this->accessControl()->decide(new AccessRequest($this->token, $attribute, $subject), $strategy);
+        $securityGranted = $this->security($strategy)
+            ->isGranted($attribute, $subject);
+        $decision = $this->accessControl()
+            ->decide(new AccessRequest($this->token, $attribute, $subject), $strategy);
 
-        $this->assertSame(
+        static::assertSame(
             $securityGranted,
-            DecisionVote::ACCESS_GRANTED === $decision->decision,
-            \sprintf('Security and AccessControl disagree on "%s".', get_debug_type($attribute).' '.var_export($attribute, true)),
+            $decision->decision === DecisionVote::ACCESS_GRANTED,
+            sprintf('Security and AccessControl disagree on "%s".', get_debug_type($attribute) . ' ' . var_export($attribute, true)),
         );
     }
 
@@ -341,7 +356,7 @@ final class SecurityParityTest extends TestCase
         $tokenStorage = new TokenStorage();
         $tokenStorage->setToken($this->token);
 
-        $voters = new class(new AuthenticationTrustResolver(), new SecurityRoleHierarchy(self::HIERARCHY)) implements \IteratorAggregate {
+        $voters = new class(new AuthenticationTrustResolver(), new SecurityRoleHierarchy(self::HIERARCHY)) implements IteratorAggregate {
             public ?AuthorizationCheckerInterface $authChecker = null;
 
             public function __construct(
@@ -350,7 +365,7 @@ final class SecurityParityTest extends TestCase
             ) {
             }
 
-            public function getIterator(): \Traversable
+            public function getIterator(): Traversable
             {
                 yield new SecurityAuthenticatedVoter($this->trustResolver);
                 yield new SecurityRoleHierarchyVoter($this->roleHierarchy);

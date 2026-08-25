@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace AccessControl;
 
+use LogicException;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage as BaseExpressionLanguage;
+use function sprintf;
 
-if (!class_exists(BaseExpressionLanguage::class)) {
-    throw new \LogicException(\sprintf('The "%s" class requires the "ExpressionLanguage" component. Try running "composer require symfony/expression-language".', ExpressionLanguage::class));
+if (! class_exists(BaseExpressionLanguage::class)) {
+    throw new LogicException(sprintf('The "%s" class requires the "ExpressionLanguage" component. Try running "composer require symfony/expression-language".', ExpressionLanguage::class));
 }
 
 // Help opcache.preload discover always-needed symbols
 class_exists(ExpressionLanguageProvider::class);
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 class ExpressionLanguage extends BaseExpressionLanguage

@@ -7,8 +7,6 @@ namespace AccessControl\Attribute;
 /**
  * References a value that is only known at runtime, by name.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class Argument

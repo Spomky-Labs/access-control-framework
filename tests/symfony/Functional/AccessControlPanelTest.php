@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
+use AccessControl\AccessControlManager;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use AccessControl\AccessControlManager;
 use Symfony\Component\DomCrawler\Crawler;
 
 /**
@@ -16,24 +16,25 @@ use Symfony\Component\DomCrawler\Crawler;
  * template survives what a decision actually holds, an attribute that is not a string and a subject
  * that is an object among them.
  */
-class AccessControlPanelTest extends WebTestCase
+final class AccessControlPanelTest extends WebTestCase
 {
     protected function setUp(): void
     {
-        if (!class_exists(AccessControlManager::class)) {
-            $this->markTestSkipped('The AccessControl component is not installed.');
+        if (! class_exists(AccessControlManager::class)) {
+            static::markTestSkipped('The AccessControl component is not installed.');
         }
     }
 
     public function testThePanelCountsWhatWasDecided()
     {
-        $metrics = $this->panel()->filter('.metrics .metric .value');
+        $metrics = $this->panel()
+            ->filter('.metrics .metric .value');
 
-        $this->assertSame('3', $metrics->eq(0)->text(), 'questions');
-        $this->assertSame('3', $metrics->eq(1)->text(), 'decisions');
-        $this->assertSame('2', $metrics->eq(2)->text(), 'granted');
-        $this->assertSame('1', $metrics->eq(3)->text(), 'denied');
-        $this->assertSame('permit_overrides', $metrics->eq(4)->text());
+        static::assertSame('3', $metrics->eq(0)->text(), 'questions');
+        static::assertSame('3', $metrics->eq(1)->text(), 'decisions');
+        static::assertSame('2', $metrics->eq(2)->text(), 'granted');
+        static::assertSame('1', $metrics->eq(3)->text(), 'denied');
+        static::assertSame('permit_overrides', $metrics->eq(4)->text());
     }
 
     /**
@@ -42,12 +43,14 @@ class AccessControlPanelTest extends WebTestCase
      */
     public function testEveryQuestionSaysWhatAskedIt()
     {
-        $origins = $this->panel()->filter('.decision-log .query-header .origin')->each(fn ($node) => $node->text());
+        $origins = $this->panel()
+            ->filter('.decision-log .query-header .origin')
+            ->each(fn ($node) => $node->text());
 
-        $this->assertCount(3, $origins);
+        static::assertCount(3, $origins);
 
         foreach ($origins as $origin) {
-            $this->assertStringContainsString('AccessControlPanelKernel::homepageController', $origin);
+            static::assertStringContainsString('AccessControlPanelKernel::homepageController', $origin);
         }
     }
 
@@ -60,9 +63,11 @@ class AccessControlPanelTest extends WebTestCase
      */
     public function testTheDecisionsAreGroupedUnderTheirQuestion()
     {
-        $rows = $this->panel()->filter('.decision-log > tbody > tr')->each(fn ($node) => $node->attr('class'));
+        $rows = $this->panel()
+            ->filter('.decision-log > tbody > tr')
+            ->each(fn ($node) => $node->attr('class'));
 
-        $this->assertSame([
+        static::assertSame([
             'query-header', 'policy-row', 'decision-result', 'decision-details',
             'query-header', 'decision-result', 'decision-details',
             'query-header', 'decision-result', 'decision-details',
@@ -80,15 +85,15 @@ class AccessControlPanelTest extends WebTestCase
         $all = $this->policyRows('/composite/all');
         $either = $this->policyRows('/composite/either');
 
-        $this->assertStringContainsString('All', $all[0]);
-        $this->assertStringStartsWith('DENIED', $all[0]);
+        static::assertStringContainsString('All', $all[0]);
+        static::assertStringStartsWith('DENIED', $all[0]);
 
-        $this->assertStringContainsString('AtLeastOneOf', $either[0]);
-        $this->assertStringStartsWith('GRANTED', $either[0]);
+        static::assertStringContainsString('AtLeastOneOf', $either[0]);
+        static::assertStringStartsWith('GRANTED', $either[0]);
 
         // The branch that was reached is the same on both sides, so only the composite tells them apart.
-        $this->assertStringContainsString('EDIT', $all[1]);
-        $this->assertStringContainsString('EDIT', $either[1]);
+        static::assertStringContainsString('EDIT', $all[1]);
+        static::assertStringContainsString('EDIT', $either[1]);
     }
 
     /**
@@ -98,7 +103,7 @@ class AccessControlPanelTest extends WebTestCase
     {
         $rows = [];
         foreach ($this->panel($path)->filter('.decision-log .policy-row') as $node) {
-            $rows[] = trim(preg_replace('/\s+/', ' ', (new Crawler($node))->text()));
+            $rows[] = trim(preg_replace('/\s+/', ' ', new Crawler($node)->text()));
         }
 
         return $rows;
@@ -112,9 +117,9 @@ class AccessControlPanelTest extends WebTestCase
     {
         $rows = $this->policyRows('/composite/when');
 
-        $this->assertCount(1, $rows, 'The branch never ran, so the composite is alone.');
-        $this->assertStringContainsString('When', $rows[0]);
-        $this->assertStringContainsString('The condition (false) does not hold.', $rows[0]);
+        static::assertCount(1, $rows, 'The branch never ran, so the composite is alone.');
+        static::assertStringContainsString('When', $rows[0]);
+        static::assertStringContainsString('The condition (false) does not hold.', $rows[0]);
     }
 
     public function testTheLogTellsWhichDecisionWentWhichWay()
@@ -122,11 +127,11 @@ class AccessControlPanelTest extends WebTestCase
         $panel = $this->panel();
         $results = $panel->filter('.decision-log .decision-result td:nth-child(2)');
 
-        $this->assertSame('GRANTED', $results->eq(0)->text());
-        $this->assertSame('GRANTED', $results->eq(1)->text());
-        $this->assertSame('DENIED', $results->eq(2)->text());
-        $this->assertStringContainsString('ROLE_ADMIN', $panel->filter('.decision-log')->text());
-        $this->assertStringContainsString('permit_overrides', $panel->filter('.decision-log')->text());
+        static::assertSame('GRANTED', $results->eq(0)->text());
+        static::assertSame('GRANTED', $results->eq(1)->text());
+        static::assertSame('DENIED', $results->eq(2)->text());
+        static::assertStringContainsString('ROLE_ADMIN', $panel->filter('.decision-log')->text());
+        static::assertStringContainsString('permit_overrides', $panel->filter('.decision-log')->text());
     }
 
     /**
@@ -134,12 +139,14 @@ class AccessControlPanelTest extends WebTestCase
      */
     public function testTheDetailsNameTheVotersAndTheirReasons()
     {
-        $log = $this->panel()->filter('.decision-log')->html();
+        $log = $this->panel()
+            ->filter('.decision-log')
+            ->html();
 
-        $this->assertStringContainsString('ClosureVoter', $log);
-        $this->assertStringContainsString('RoleVoter', $log);
-        $this->assertStringContainsString('The user does not have the required role.', $log);
-        $this->assertStringContainsString('10.0.0.1', $log);
+        static::assertStringContainsString('ClosureVoter', $log);
+        static::assertStringContainsString('RoleVoter', $log);
+        static::assertStringContainsString('The user does not have the required role.', $log);
+        static::assertStringContainsString('10.0.0.1', $log);
     }
 
     /**
@@ -151,19 +158,21 @@ class AccessControlPanelTest extends WebTestCase
     {
         $panel = $this->panel();
 
-        $this->assertSame(
+        static::assertSame(
             ['Decisions3', 'Configuration'],
-            $panel->filter('#collector-content .sf-tabs > .tab > .tab-title')->each(fn ($node) => trim($node->text())),
+            $panel->filter('#collector-content .sf-tabs > .tab > .tab-title')
+                ->each(fn ($node) => trim($node->text())),
         );
 
-        $this->assertSame(
+        static::assertSame(
             ['Questions', 'Decisions', 'Granted', 'Denied'],
-            $panel->filter('#collector-content > .metrics .metric .label')->each(fn ($node) => trim($node->text())),
+            $panel->filter('#collector-content > .metrics .metric .label')
+                ->each(fn ($node) => trim($node->text())),
         );
 
-        $this->assertCount(1, $panel->filter('.sf-tabs > .tab:nth-child(1) .decision-log'));
-        $this->assertCount(1, $panel->filter('.sf-tabs > .tab:nth-child(2) table.integration'));
-        $this->assertCount(1, $panel->filter('.sf-tabs > .tab:nth-child(2) table.voters'));
+        static::assertCount(1, $panel->filter('.sf-tabs > .tab:nth-child(1) .decision-log'));
+        static::assertCount(1, $panel->filter('.sf-tabs > .tab:nth-child(2) table.integration'));
+        static::assertCount(1, $panel->filter('.sf-tabs > .tab:nth-child(2) table.voters'));
     }
 
     /**
@@ -178,19 +187,21 @@ class AccessControlPanelTest extends WebTestCase
             $rows[trim($row->filter('th')->text())] = trim($row->filter('td')->text());
         }
 
-        $this->assertSame('AccessControl', $rows['Access decisions']);
-        $this->assertSame('AccessControl', $rows['#[IsGranted]']);
-        $this->assertSame('AccessControl', $rows['Role hierarchy']);
-        $this->assertSame('nobody', $rows['URL rules'], 'This application declares none.');
-        $this->assertSame('0 bridged', $rows['Voters written against Security']);
+        static::assertSame('AccessControl', $rows['Access decisions']);
+        static::assertSame('AccessControl', $rows['#[IsGranted]']);
+        static::assertSame('AccessControl', $rows['Role hierarchy']);
+        static::assertSame('nobody', $rows['URL rules'], 'This application declares none.');
+        static::assertSame('0 bridged', $rows['Voters written against Security']);
     }
 
     public function testTheRegisteredVotersAreListedWhetherConsultedOrNot()
     {
-        $voters = $this->panel()->filter('table.voters')->text();
+        $voters = $this->panel()
+            ->filter('table.voters')
+            ->text();
 
-        $this->assertStringContainsString('RoleVoter', $voters);
-        $this->assertStringContainsString('ClosureVoter', $voters);
+        static::assertStringContainsString('RoleVoter', $voters);
+        static::assertStringContainsString('ClosureVoter', $voters);
     }
 
     public function testTheToolbarCountsTheDecisions()
@@ -198,19 +209,19 @@ class AccessControlPanelTest extends WebTestCase
         $client = new KernelBrowser(new AccessControlPanelKernel());
         $client->request('GET', '/');
 
-        $toolbar = $client->request('GET', '/_wdt/'.$client->getResponse()->headers->get('X-Debug-Token'))->html();
+        $toolbar = $client->request('GET', '/_wdt/' . $client->getResponse()->headers->get('X-Debug-Token'))->html();
 
-        $this->assertStringContainsString('Access Control', $toolbar);
-        $this->assertStringContainsString('Default strategy', $toolbar);
+        static::assertStringContainsString('Access Control', $toolbar);
+        static::assertStringContainsString('Default strategy', $toolbar);
     }
 
     public function testAPageThatDecidesNothingStillOpensThePanel()
     {
         $panel = $this->panel('/quiet');
 
-        $this->assertStringContainsString('No access control question was asked during this request.', $panel->filter('#collector-content')->text());
-        $this->assertCount(0, $panel->filter('.decision-log'));
-        $this->assertStringContainsString('RoleVoter', $panel->filter('table.voters')->text());
+        static::assertStringContainsString('No access control question was asked during this request.', $panel->filter('#collector-content')->text());
+        static::assertCount(0, $panel->filter('.decision-log'));
+        static::assertStringContainsString('RoleVoter', $panel->filter('table.voters')->text());
     }
 
     private function panel(string $path = '/'): Crawler
@@ -218,6 +229,6 @@ class AccessControlPanelTest extends WebTestCase
         $client = new KernelBrowser(new AccessControlPanelKernel());
         $client->request('GET', $path);
 
-        return $client->request('GET', '/_profiler/'.$client->getResponse()->headers->get('X-Debug-Token').'?panel=access_control');
+        return $client->request('GET', '/_profiler/' . $client->getResponse()->headers->get('X-Debug-Token') . '?panel=access_control');
     }
 }

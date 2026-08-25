@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Voter\ABAC;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessRequest;
 use AccessControl\DecisionVote;
 use AccessControl\Requester\Actor;
@@ -14,6 +13,7 @@ use AccessControl\Tests\Fixtures\FakeToken;
 use AccessControl\Tests\Fixtures\FakeUser;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Voter\ABAC\AuthenticatedVoter;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
 use Symfony\Component\Security\Core\Authentication\Token\AbstractToken;
 use Symfony\Component\Security\Core\Authentication\Token\NullToken;
@@ -27,45 +27,51 @@ final class AuthenticatedVoterTest extends TestCase
 {
     public function testPublicAccessIsGrantedWithoutAnyRequester(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest(null, 'PUBLIC_ACCESS'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(null, 'PUBLIC_ACCESS'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     public function testPublicAccessIsGrantedToAnUnknownRequester(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest('an-api-key', 'PUBLIC_ACCESS'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest('an-api-key', 'PUBLIC_ACCESS'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     public function testUnknownRequesterMakesTheVoterAbstain(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest('an-api-key', 'IS_AUTHENTICATED_FULLY'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest('an-api-key', 'IS_AUTHENTICATED_FULLY'));
 
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
-        $this->assertSame('The requester is not an instance of TokenInterface.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
+        static::assertSame('The requester is not an instance of TokenInterface.', $outcome->reason);
     }
 
     public function testUnknownAttributeMakesTheVoterAbstain(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest(new FakeToken(new FakeUser()), 'ROLE_ADMIN'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new FakeToken(new FakeUser()), 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
     }
 
     public function testFullyAuthenticatedRequesterIsGranted(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest(new FakeToken(new FakeUser()), 'IS_AUTHENTICATED_FULLY'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new FakeToken(new FakeUser()), 'IS_AUTHENTICATED_FULLY'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     public function testRequesterWithoutTheAuthenticationStateIsDenied(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest(new NullToken(), 'IS_AUTHENTICATED_FULLY'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new NullToken(), 'IS_AUTHENTICATED_FULLY'));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
     }
 
     /**
@@ -75,9 +81,10 @@ final class AuthenticatedVoterTest extends TestCase
      */
     public function testPublicAccessIsGrantedWithoutAnyTrustResolver(): void
     {
-        $outcome = (new AuthenticatedVoter())->vote(new AccessRequest(null, 'PUBLIC_ACCESS'));
+        $outcome = new AuthenticatedVoter()
+            ->vote(new AccessRequest(null, 'PUBLIC_ACCESS'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     /**
@@ -86,10 +93,11 @@ final class AuthenticatedVoterTest extends TestCase
      */
     public function testAnAuthenticationStateIsRefusedWithoutATrustResolver(): void
     {
-        $outcome = (new AuthenticatedVoter())->vote(new AccessRequest(new FakeToken(new FakeUser()), 'IS_AUTHENTICATED_FULLY'));
+        $outcome = new AuthenticatedVoter()
+            ->vote(new AccessRequest(new FakeToken(new FakeUser()), 'IS_AUTHENTICATED_FULLY'));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
-        $this->assertSame('No authentication trust resolver is available.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
+        static::assertSame('No authentication trust resolver is available.', $outcome->reason);
     }
 
     /**
@@ -100,14 +108,15 @@ final class AuthenticatedVoterTest extends TestCase
     {
         $requester = new DelegatedRequester(new StandaloneRequester(['ROLE_ADMIN']));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->createVoter()->vote(new AccessRequest($requester, 'IS_IMPERSONATOR'))->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->createVoter()->vote(new AccessRequest($requester, 'IS_IMPERSONATOR'))->decision);
     }
 
     public function testARequesterNobodyIsActingAsIsNotAnImpersonator(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'IS_IMPERSONATOR'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'IS_IMPERSONATOR'));
 
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
     }
 
     /**
@@ -118,7 +127,8 @@ final class AuthenticatedVoterTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        $this->createVoter()->vote(new AccessRequest(new class(['ROLE_USER']) extends AbstractToken implements OfflineTokenInterface {}, 'IS_IMPERSONATOR'));
+        $this->createVoter()
+            ->vote(new AccessRequest(new class(['ROLE_USER']) extends AbstractToken implements OfflineTokenInterface {}, 'IS_IMPERSONATOR'));
     }
 
     /**
@@ -130,9 +140,9 @@ final class AuthenticatedVoterTest extends TestCase
     {
         $token = new SwitchUserToken(new InMemoryUser('alice', null), 'main', ['ROLE_USER'], $original = new UsernamePasswordToken(new InMemoryUser('root', null), 'main', ['ROLE_ADMIN']));
 
-        $this->assertNotInstanceOf(DelegatedRequesterInterface::class, $token, 'Security is left untouched.');
-        $this->assertSame($original, Actor::of($token));
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->createVoter()->vote(new AccessRequest($token, 'IS_IMPERSONATOR'))->decision);
+        static::assertNotInstanceOf(DelegatedRequesterInterface::class, $token, 'Security is left untouched.');
+        static::assertSame($original, Actor::of($token));
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->createVoter()->vote(new AccessRequest($token, 'IS_IMPERSONATOR'))->decision);
     }
 
     private function createVoter(): AuthenticatedVoter

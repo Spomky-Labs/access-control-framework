@@ -32,8 +32,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * used by Security, which is what reconciles the independence of the component with a smooth
  * migration.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AuthorizationCheckerAdapter implements AuthorizationCheckerInterface, UserAuthorizationCheckerInterface
@@ -54,7 +52,7 @@ final readonly class AuthorizationCheckerAdapter implements AuthorizationChecker
     {
         $requester = $this->requesterProvider->getRequester();
 
-        if (null === $requester || ($requester instanceof TokenInterface && !$requester->getUser())) {
+        if ($requester === null || ($requester instanceof TokenInterface && ! $requester->getUser())) {
             $requester = new NullToken();
         }
 
@@ -83,9 +81,9 @@ final readonly class AuthorizationCheckerAdapter implements AuthorizationChecker
         $checker = new RequesterBoundChecker($this->accessControlManager, new StaticRequesterProvider($requester));
         $decision = $checker->decide($attribute, $subject);
 
-        $granted = DecisionVote::ACCESS_GRANTED === $decision->decision;
+        $granted = $decision->decision === DecisionVote::ACCESS_GRANTED;
 
-        if (null !== $accessDecision) {
+        if ($accessDecision !== null) {
             $accessDecision->isGranted = $granted;
             $accessDecision->votes = $this->translateVotes($decision);
         }
@@ -113,7 +111,7 @@ final readonly class AuthorizationCheckerAdapter implements AuthorizationChecker
                 DecisionVote::ACCESS_ABSTAIN => VoterInterface::ACCESS_ABSTAIN,
             };
 
-            if (null !== $cast->outcome->reason) {
+            if ($cast->outcome->reason !== null) {
                 $vote->addReason($cast->outcome->reason);
             }
 

@@ -37,7 +37,9 @@ return static function (ContainerConfigurator $container) {
             ])
             // The memoised voter support grows with the number of distinct attributes met, which
             // never ends in a worker.
-            ->tag('kernel.reset', ['method' => 'reset'])
+            ->tag('kernel.reset', [
+                'method' => 'reset',
+            ])
         ->alias(AccessControlManagerInterface::class, 'access_control.manager')
 
         // The four combining algorithms. Their names are those of XACML, and the correspondence
@@ -109,7 +111,9 @@ return static function (ContainerConfigurator $container) {
             // Walking the stack for the call site of every decision only pays for itself in debug.
             ->args([param('kernel.debug')])
             ->tag('kernel.event_subscriber')
-            ->tag('kernel.reset', ['method' => 'reset'])
+            ->tag('kernel.reset', [
+                'method' => 'reset',
+            ])
 
         ->set('access_control.listener.access_policy', AccessPolicyListener::class)
             ->args([

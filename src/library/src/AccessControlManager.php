@@ -10,10 +10,11 @@ use AccessControl\Exception\InvalidStrategyException;
 use AccessControl\Strategy\PermitOverridesStrategy;
 use AccessControl\Strategy\StrategyInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use function is_array;
+use function is_string;
+use function sprintf;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class AccessControlManager implements AccessControlManagerInterface
@@ -63,20 +64,20 @@ final class AccessControlManager implements AccessControlManagerInterface
         foreach ($strategies as $strategy) {
             $name = $strategy->getName();
             if (isset($namedStrategies[$name])) {
-                throw new InvalidStrategyException(\sprintf('Strategy "%s" is registered twice, by "%s" and "%s".', $name, get_debug_type($namedStrategies[$name]), get_debug_type($strategy)));
+                throw new InvalidStrategyException(sprintf('Strategy "%s" is registered twice, by "%s" and "%s".', $name, get_debug_type($namedStrategies[$name]), get_debug_type($strategy)));
             }
             $namedStrategies[$name] = $strategy;
         }
 
-        if (!$namedStrategies) {
+        if (! $namedStrategies) {
             $permitOverridesStrategy = new PermitOverridesStrategy();
             $namedStrategies[$permitOverridesStrategy->getName()] = $permitOverridesStrategy;
         }
 
         $defaultStrategy ??= array_key_first($namedStrategies);
 
-        if (!isset($namedStrategies[$defaultStrategy])) {
-            throw new InvalidStrategyException(\sprintf('The default strategy "%s" is not registered. Registered strategies are: "%s".', $defaultStrategy, implode('", "', array_keys($namedStrategies))));
+        if (! isset($namedStrategies[$defaultStrategy])) {
+            throw new InvalidStrategyException(sprintf('The default strategy "%s" is not registered. Registered strategies are: "%s".', $defaultStrategy, implode('", "', array_keys($namedStrategies))));
         }
 
         $this->defaultStrategy = $defaultStrategy;
@@ -103,8 +104,8 @@ final class AccessControlManager implements AccessControlManagerInterface
     public function decide(AccessRequest $accessRequest, ?string $strategy = null): AccessDecision
     {
         $strategy ??= $this->defaultStrategy;
-        if (!isset($this->strategies[$strategy])) {
-            throw new InvalidStrategyException(\sprintf('Strategy "%s" is not registered. Registered strategies are: "%s".', $strategy, implode('", "', array_keys($this->strategies))));
+        if (! isset($this->strategies[$strategy])) {
+            throw new InvalidStrategyException(sprintf('Strategy "%s" is not registered. Registered strategies are: "%s".', $strategy, implode('", "', array_keys($this->strategies))));
         }
 
         $parent = $this->pending ? $this->pending[array_key_last($this->pending)] : null;
@@ -120,7 +121,7 @@ final class AccessControlManager implements AccessControlManagerInterface
 
             $accessDecision = $this->strategies[$strategy]->evaluate($accessRequest, $votes);
 
-            if (DecisionVote::ACCESS_ABSTAIN === $accessDecision->decision) {
+            if ($accessDecision->decision === DecisionVote::ACCESS_ABSTAIN) {
                 $summary = $accessDecision->reason;
                 $accessDecision = ($accessRequest->allowIfAllAbstain ?? $this->allowIfAllAbstain)
                     ? AccessDecision::grant($accessRequest, $votes, $summary)
@@ -140,25 +141,25 @@ final class AccessControlManager implements AccessControlManagerInterface
      */
     private function getVoters(AccessRequest $accessRequest): iterable
     {
-        $this->votersList ??= \is_array($this->voters) ? array_values($this->voters) : iterator_to_array($this->voters, false);
+        $this->votersList ??= is_array($this->voters) ? array_values($this->voters) : iterator_to_array($this->voters, false);
 
-        $keyAttribute = \is_string($accessRequest->attribute) ? $accessRequest->attribute : null;
+        $keyAttribute = is_string($accessRequest->attribute) ? $accessRequest->attribute : null;
 
         foreach ($this->votersList as $key => $voter) {
-            if (null === $keyAttribute) {
-                if (!$voter->supportsAttribute($accessRequest->attribute)) {
+            if ($keyAttribute === null) {
+                if (! $voter->supportsAttribute($accessRequest->attribute)) {
                     continue;
                 }
             } else {
-                if (!isset($this->votersCacheAttributes[$keyAttribute][$key])) {
+                if (! isset($this->votersCacheAttributes[$keyAttribute][$key])) {
                     $this->votersCacheAttributes[$keyAttribute][$key] = $voter->supportsAttribute($accessRequest->attribute);
                 }
-                if (!$this->votersCacheAttributes[$keyAttribute][$key]) {
+                if (! $this->votersCacheAttributes[$keyAttribute][$key]) {
                     continue;
                 }
             }
 
-            if (!$voter->supportsSubject($accessRequest->subject)) {
+            if (! $voter->supportsSubject($accessRequest->subject)) {
                 continue;
             }
 

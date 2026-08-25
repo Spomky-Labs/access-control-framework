@@ -21,8 +21,6 @@ use Symfony\Component\Workflow\EventListener\GuardListener as SecurityGuardListe
  * reach this component, security.access.decision_manager being an alias to ours, so swapping the
  * listener would gain nothing and would cost the trust resolver an expression may name.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class WorkflowGuardPass implements CompilerPassInterface
@@ -31,7 +29,7 @@ final class WorkflowGuardPass implements CompilerPassInterface
      * The four Workflow asks for, and the one that tells them apart: with SecurityBundle they are
      * all there, without it none is.
      */
-    private const SECURITY_SERVICE = 'security.token_storage';
+    private const string SECURITY_SERVICE = 'security.token_storage';
 
     /**
      * The flag is taken down last, so that a container where the swap did not happen still meets the
@@ -39,12 +37,12 @@ final class WorkflowGuardPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container): void
     {
-        if (!$container->hasParameter('workflow.has_guard_listeners') || $container->has(self::SECURITY_SERVICE)) {
+        if (! $container->hasParameter('workflow.has_guard_listeners') || $container->has(self::SECURITY_SERVICE)) {
             return;
         }
 
         foreach ($container->getDefinitions() as $definition) {
-            if (SecurityGuardListener::class !== $definition->getClass()) {
+            if ($definition->getClass() !== SecurityGuardListener::class) {
                 continue;
             }
 
@@ -56,6 +54,7 @@ final class WorkflowGuardPass implements CompilerPassInterface
             ]);
         }
 
-        $container->getParameterBag()->remove('workflow.has_guard_listeners');
+        $container->getParameterBag()
+            ->remove('workflow.has_guard_listeners');
     }
 }

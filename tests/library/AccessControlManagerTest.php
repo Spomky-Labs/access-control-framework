@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
@@ -19,6 +18,9 @@ use AccessControl\Tests\Fixtures\RecordingVoter;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Tests\Fixtures\ThrowingVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use stdClass;
 use Symfony\Component\Security\Core\Authentication\Token\NullToken;
 
 final class AccessControlManagerTest extends TestCase
@@ -31,8 +33,8 @@ final class AccessControlManagerTest extends TestCase
         $manager->decide(new AccessRequest(new NullToken(), 'PUBLIC_ACCESS'));
         $decision = $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertSame(['ROLE_ADMIN'], $voter->voteCalls);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame(['ROLE_ADMIN'], $voter->voteCalls);
     }
 
     public function testSupportsAttributeIsCalledOncePerAttributeValue(): void
@@ -44,7 +46,7 @@ final class AccessControlManagerTest extends TestCase
         $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
         $manager->decide(new AccessRequest(new NullToken(), 'PUBLIC_ACCESS'));
 
-        $this->assertSame(['ROLE_ADMIN', 'PUBLIC_ACCESS'], $voter->supportsAttributeCalls);
+        static::assertSame(['ROLE_ADMIN', 'PUBLIC_ACCESS'], $voter->supportsAttributeCalls);
     }
 
     public function testResetDropsTheAttributeCache(): void
@@ -57,7 +59,7 @@ final class AccessControlManagerTest extends TestCase
         $manager->reset();
         $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
 
-        $this->assertSame(['ROLE_ADMIN', 'ROLE_ADMIN'], $voter->supportsAttributeCalls);
+        static::assertSame(['ROLE_ADMIN', 'ROLE_ADMIN'], $voter->supportsAttributeCalls);
     }
 
     public function testResetKeepsTheVotersOfANonRewindableIterable(): void
@@ -73,7 +75,7 @@ final class AccessControlManagerTest extends TestCase
         $manager->reset();
         $decision = $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
     }
 
     public function testSupportsSubjectIsNeverCached(): void
@@ -81,11 +83,11 @@ final class AccessControlManagerTest extends TestCase
         $voter = new RecordingVoter(['ROLE_ADMIN']);
         $manager = new AccessControlManager([new PermitOverridesStrategy()], [$voter]);
 
-        $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN', new \stdClass()));
-        $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN', new \stdClass()));
+        $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN', new stdClass()));
+        $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN', new stdClass()));
         $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
 
-        $this->assertSame([\stdClass::class, \stdClass::class, 'null'], $voter->supportsSubjectCalls);
+        static::assertSame([stdClass::class, stdClass::class, 'null'], $voter->supportsSubjectCalls);
     }
 
     public function testTwoSubjectsOfTheSameTypeAreJudgedOnTheirOwnState(): void
@@ -95,8 +97,8 @@ final class AccessControlManagerTest extends TestCase
         $granted = $manager->decide(new AccessRequest(null, 'read', new Post('Published', true)));
         $denied = $manager->decide(new AccessRequest(null, 'read', new Post('Draft', false)));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
     }
 
     public function testSupportsAttributeIsNotCachedForNonStringAttributes(): void
@@ -104,21 +106,21 @@ final class AccessControlManagerTest extends TestCase
         $voter = new RecordingVoter([]);
         $manager = new AccessControlManager([new PermitOverridesStrategy()], [$voter]);
 
-        $manager->decide(new AccessRequest(new NullToken(), new \stdClass()));
-        $manager->decide(new AccessRequest(new NullToken(), new \stdClass()));
+        $manager->decide(new AccessRequest(new NullToken(), new stdClass()));
+        $manager->decide(new AccessRequest(new NullToken(), new stdClass()));
 
-        $this->assertCount(2, $voter->supportsAttributeCalls);
+        static::assertCount(2, $voter->supportsAttributeCalls);
     }
 
     public function testUnsupportedSubjectTypeSkipsTheVoter(): void
     {
-        $voter = new RecordingVoter(['ROLE_ADMIN'], [\stdClass::class]);
+        $voter = new RecordingVoter(['ROLE_ADMIN'], [stdClass::class]);
         $manager = new AccessControlManager([new PermitOverridesStrategy()], [$voter]);
 
         $decision = $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN', 'a string subject'));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertSame([], $voter->voteCalls);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame([], $voter->voteCalls);
     }
 
     public function testVotersCanBeGivenAsANonRewindableIterable(): void
@@ -133,8 +135,8 @@ final class AccessControlManagerTest extends TestCase
         $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
         $decision = $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertCount(2, $voter->voteCalls);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertCount(2, $voter->voteCalls);
     }
 
     public function testRequesterDoesNotHaveToBeASecurityToken(): void
@@ -144,9 +146,9 @@ final class AccessControlManagerTest extends TestCase
         $granted = $manager->decide(new AccessRequest(new StandaloneRequester(), 'ROLE_ADMIN'));
         $denied = $manager->decide(new AccessRequest(new StandaloneRequester(), 'ROLE_SUPER_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
-        $this->assertSame('At least one voter granted access. The user has the required role.', $granted->reason);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
+        static::assertSame('At least one voter granted access. The user has the required role.', $granted->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
     }
 
     public function testRequesterCanBeAnythingWhenNoVoterUnderstandsIt(): void
@@ -155,7 +157,7 @@ final class AccessControlManagerTest extends TestCase
 
         $decision = $manager->decide(new AccessRequest('an-api-key', 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
     }
 
     /**
@@ -171,8 +173,8 @@ final class AccessControlManagerTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::grant('Granted.')),
         ]);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('The relationship store is unreachable.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageIsOrContains('The relationship store is unreachable.');
 
         $manager->decide(new AccessRequest(new NullToken(), 'ROLE_ADMIN'));
     }
@@ -189,7 +191,7 @@ final class AccessControlManagerTest extends TestCase
     public function testTwoStrategiesCannotShareTheSameName(): void
     {
         $this->expectException(InvalidStrategyException::class);
-        $this->expectExceptionMessage('Strategy "permit_overrides" is registered twice');
+        $this->expectExceptionMessageIsOrContains('Strategy "permit_overrides" is registered twice');
 
         new AccessControlManager([new PermitOverridesStrategy(), new PermitOverridesStrategy()], []);
     }
@@ -197,7 +199,7 @@ final class AccessControlManagerTest extends TestCase
     public function testUnknownDefaultStrategyIsRejectedAtConstruction(): void
     {
         $this->expectException(InvalidStrategyException::class);
-        $this->expectExceptionMessage('The default strategy "nope" is not registered.');
+        $this->expectExceptionMessageIsOrContains('The default strategy "nope" is not registered.');
 
         new AccessControlManager([new PermitOverridesStrategy()], [], 'nope');
     }
@@ -208,7 +210,7 @@ final class AccessControlManagerTest extends TestCase
 
         $decision = $manager->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
 
-        $this->assertSame('All non-abstaining voters granted access. The user has the required role.', $decision->reason);
+        static::assertSame('All non-abstaining voters granted access. The user has the required role.', $decision->reason);
     }
 
     public function testAnEmptyStrategyListFallsBackToAffirmative(): void
@@ -217,7 +219,7 @@ final class AccessControlManagerTest extends TestCase
 
         $decision = $manager->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertSame('At least one voter granted access. The user has the required role.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame('At least one voter granted access. The user has the required role.', $decision->reason);
     }
 }

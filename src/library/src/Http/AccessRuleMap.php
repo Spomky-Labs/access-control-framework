@@ -9,8 +9,6 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Access rules in declaration order, the first match winning.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 class AccessRuleMap implements AccessRuleMapInterface

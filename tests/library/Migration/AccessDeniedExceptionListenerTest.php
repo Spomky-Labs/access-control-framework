@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\Bridge\Security\AccessDeniedExceptionListener;
 use AccessControl\Exception\AccessDeniedException;
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +24,7 @@ use Symfony\Component\Security\Core\User\InMemoryUser;
 use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface;
 use Symfony\Component\Security\Http\Firewall\ExceptionListener;
 use Symfony\Component\Security\Http\HttpUtils;
+use Throwable;
 
 /**
  * Security recognises its own denial alone and must keep doing so, this component being nowhere in
@@ -38,38 +40,41 @@ final class AccessDeniedExceptionListenerTest extends TestCase
      */
     public function testItRunsBeforeTheFirewall(): void
     {
-        $this->assertSame(['onKernelException', 2], AccessDeniedExceptionListener::getSubscribedEvents()[KernelEvents::EXCEPTION]);
+        static::assertSame(['onKernelException', 2], AccessDeniedExceptionListener::getSubscribedEvents()[KernelEvents::EXCEPTION]);
     }
 
     public function testADenialOfThisComponentIsSaidAgainInSecurityTerms(): void
     {
         $event = $this->createEvent($denial = new AccessDeniedException('Nope.'));
 
-        (new AccessDeniedExceptionListener())->onKernelException($event);
+        new AccessDeniedExceptionListener()
+            ->onKernelException($event);
 
         $throwable = $event->getThrowable();
 
-        $this->assertInstanceOf(SecurityAccessDeniedException::class, $throwable);
-        $this->assertSame('Nope.', $throwable->getMessage());
-        $this->assertSame($denial, $throwable->getPrevious());
+        static::assertInstanceOf(SecurityAccessDeniedException::class, $throwable);
+        static::assertSame('Nope.', $throwable->getMessage());
+        static::assertSame($denial, $throwable->getPrevious());
     }
 
     public function testSecuritysOwnDenialIsLeftAlone(): void
     {
         $event = $this->createEvent($denial = new SecurityAccessDeniedException('Nope.'));
 
-        (new AccessDeniedExceptionListener())->onKernelException($event);
+        new AccessDeniedExceptionListener()
+            ->onKernelException($event);
 
-        $this->assertSame($denial, $event->getThrowable());
+        static::assertSame($denial, $event->getThrowable());
     }
 
     public function testAnythingElseIsLeftAlone(): void
     {
-        $event = $this->createEvent($failure = new \RuntimeException('Boom.'));
+        $event = $this->createEvent($failure = new RuntimeException('Boom.'));
 
-        (new AccessDeniedExceptionListener())->onKernelException($event);
+        new AccessDeniedExceptionListener()
+            ->onKernelException($event);
 
-        $this->assertSame($failure, $event->getThrowable());
+        static::assertSame($failure, $event->getThrowable());
     }
 
     /**
@@ -78,11 +83,12 @@ final class AccessDeniedExceptionListenerTest extends TestCase
      */
     public function testADenialBuriedUnderAWrapperIsStillFound(): void
     {
-        $event = $this->createEvent(new \RuntimeException('An exception has been thrown during the rendering of a template.', 0, $denial = new AccessDeniedException('Nope.')));
+        $event = $this->createEvent(new RuntimeException('An exception has been thrown during the rendering of a template.', 0, $denial = new AccessDeniedException('Nope.')));
 
-        (new AccessDeniedExceptionListener())->onKernelException($event);
+        new AccessDeniedExceptionListener()
+            ->onKernelException($event);
 
-        $this->assertSame($denial, $event->getThrowable()->getPrevious());
+        static::assertSame($denial, $event->getThrowable()->getPrevious());
     }
 
     /**
@@ -93,12 +99,12 @@ final class AccessDeniedExceptionListenerTest extends TestCase
     {
         $response = $this->dispatch(new AccessDeniedException('Nope.'), null);
 
-        $this->assertSame('the entry point', $response?->getContent());
+        static::assertSame('the entry point', $response?->getContent());
     }
 
     public function testTheSameDenialReportedBySecurityAnswersAlike(): void
     {
-        $this->assertSame(
+        static::assertSame(
             $this->dispatch(new SecurityAccessDeniedException('Nope.'), null)?->getContent(),
             $this->dispatch(new AccessDeniedException('Nope.'), null)?->getContent(),
         );
@@ -112,7 +118,7 @@ final class AccessDeniedExceptionListenerTest extends TestCase
     {
         $token = new UsernamePasswordToken(new InMemoryUser('alice', null), 'main', ['ROLE_USER']);
 
-        $this->assertNull($this->dispatch(new AccessDeniedException('Nope.'), $token));
+        static::assertNull($this->dispatch(new AccessDeniedException('Nope.'), $token));
     }
 
     /**
@@ -123,17 +129,17 @@ final class AccessDeniedExceptionListenerTest extends TestCase
     {
         $response = $this->dispatch(new AuthenticationException('Who are you?'), null);
 
-        $this->assertSame('the entry point', $response?->getContent());
+        static::assertSame('the entry point', $response?->getContent());
     }
 
-    private function dispatch(\Throwable $throwable, ?TokenInterface $token): ?Response
+    private function dispatch(Throwable $throwable, ?TokenInterface $token): ?Response
     {
         $tokenStorage = new TokenStorage();
-        if (null !== $token) {
+        if ($token !== null) {
             $tokenStorage->setToken($token);
         }
 
-        $entryPoint = new class implements AuthenticationEntryPointInterface {
+        $entryPoint = new class() implements AuthenticationEntryPointInterface {
             public function start(Request $request, ?AuthenticationException $authException = null): Response
             {
                 return new Response('the entry point');
@@ -142,17 +148,18 @@ final class AccessDeniedExceptionListenerTest extends TestCase
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new AccessDeniedExceptionListener());
-        (new ExceptionListener($tokenStorage, new AuthenticationTrustResolver(), new HttpUtils(), 'main', $entryPoint))->register($dispatcher);
+        new ExceptionListener($tokenStorage, new AuthenticationTrustResolver(), new HttpUtils(), 'main', $entryPoint)
+            ->register($dispatcher);
 
         $dispatcher->dispatch($event = $this->createEvent($throwable), KernelEvents::EXCEPTION);
 
         return $event->getResponse();
     }
 
-    private function createEvent(\Throwable $throwable): ExceptionEvent
+    private function createEvent(Throwable $throwable): ExceptionEvent
     {
         return new ExceptionEvent(
-            $this->createStub(HttpKernelInterface::class),
+            static::createStub(HttpKernelInterface::class),
             new Request(),
             HttpKernelInterface::MAIN_REQUEST,
             $throwable,

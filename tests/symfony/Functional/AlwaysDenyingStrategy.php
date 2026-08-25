@@ -6,6 +6,7 @@ namespace AccessControl\Tests\Bundle\Functional;
 
 use Symfony\Component\Security\Core\Authorization\AccessDecision;
 use Symfony\Component\Security\Core\Authorization\Strategy\AccessDecisionStrategyInterface;
+use Traversable;
 
 /**
  * The combining algorithm an application writes and names through
@@ -14,7 +15,7 @@ use Symfony\Component\Security\Core\Authorization\Strategy\AccessDecisionStrateg
  */
 class AlwaysDenyingStrategy implements AccessDecisionStrategyInterface
 {
-    public function decide(\Traversable $results, ?AccessDecision $accessDecision = null): bool
+    public function decide(Traversable $results, ?AccessDecision $accessDecision = null): bool
     {
         return false;
     }

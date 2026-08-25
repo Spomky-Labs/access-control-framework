@@ -20,8 +20,6 @@ use AccessControl\DecisionVote;
  *
  * This is the "priority" strategy of the Security component.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class FirstApplicableStrategy implements StrategyInterface
@@ -37,11 +35,11 @@ final readonly class FirstApplicableStrategy implements StrategyInterface
     public function evaluate(AccessRequest $accessRequest, iterable $votes): AccessDecision
     {
         foreach ($votes as $vote) {
-            if (DecisionVote::ACCESS_GRANTED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 return AccessDecision::grant($accessRequest, $votes, 'The first voter that did not abstain granted access.');
             }
 
-            if (DecisionVote::ACCESS_DENIED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_DENIED) {
                 return AccessDecision::deny($accessRequest, $votes, 'The first voter that did not abstain denied access.');
             }
         }

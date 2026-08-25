@@ -9,8 +9,6 @@ use Symfony\Component\HttpFoundation\Request;
 /**
  * Tells which access rule covers a request, if any.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 interface AccessRuleMapInterface

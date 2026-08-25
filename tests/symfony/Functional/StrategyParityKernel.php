@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
 use AccessControl\Bundle\AccessControlBundle;
+use AccessControl\RequesterBoundChecker;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
-use AccessControl\RequesterBoundChecker;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +27,9 @@ class StrategyParityKernel extends Kernel
     use MicroKernelTrait;
 
     public const SECURITY = 'security';
+
     public const BOTH = 'both';
+
     public const ACCESS_CONTROL = 'access_control';
 
     /**
@@ -51,18 +53,19 @@ class StrategyParityKernel extends Kernel
     {
         yield new FrameworkBundle();
 
-        if (self::ACCESS_CONTROL !== $this->shape) {
+        if ($this->shape !== self::ACCESS_CONTROL) {
             yield new SecurityBundle();
         }
 
-        if (self::SECURITY !== $this->shape) {
+        if ($this->shape !== self::SECURITY) {
             yield new AccessControlBundle();
         }
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->add('strategy_parity', '/strategy-parity')->controller([$this, self::ACCESS_CONTROL === $this->shape ? 'answerWithoutSecurity' : 'answer']);
+        $routes->add('strategy_parity', '/strategy-parity')
+            ->controller([$this, $this->shape === self::ACCESS_CONTROL ? 'answerWithoutSecurity' : 'answer']);
     }
 
     /**
@@ -83,35 +86,54 @@ class StrategyParityKernel extends Kernel
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
         ]);
 
-        if (self::ACCESS_CONTROL !== $this->shape) {
+        if ($this->shape !== self::ACCESS_CONTROL) {
             $container->loadFromExtension('security', [
-                'password_hashers' => [InMemoryUser::class => 'plaintext'],
-                'providers' => ['main' => ['memory' => ['users' => [
-                    'alice' => ['password' => 'pa$$word', 'roles' => ['ROLE_ADMIN']],
-                ]]]],
-                'firewalls' => ['main' => ['pattern' => '^/', 'http_basic' => null, 'provider' => 'main']],
+                'password_hashers' => [
+                    InMemoryUser::class => 'plaintext',
+                ],
+                'providers' => [
+                    'main' => [
+                        'memory' => [
+                            'users' => [
+                                'alice' => [
+                                    'password' => 'pa$$word',
+                                    'roles' => ['ROLE_ADMIN'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'firewalls' => [
+                    'main' => [
+                        'pattern' => '^/',
+                        'http_basic' => null,
+                        'provider' => 'main',
+                    ],
+                ],
                 'access_decision_manager' => $this->decisionManager,
             ]);
         }
 
-        if (self::SECURITY !== $this->shape) {
+        if ($this->shape !== self::SECURITY) {
             $container->loadFromExtension('access_control', $this->accessControl);
         }
 
         foreach ($this->voters as $index => $granting) {
-            if (self::ACCESS_CONTROL === $this->shape) {
-                $container->register('test.voter.'.$index, FixedAccessControlVoter::class)
+            if ($this->shape === self::ACCESS_CONTROL) {
+                $container->register('test.voter.' . $index, FixedAccessControlVoter::class)
                     ->setArguments([$granting])
                     ->addTag('access_control.voter');
 
                 continue;
             }
 
-            $container->register('test.voter.'.$index, FixedVoter::class)
+            $container->register('test.voter.' . $index, FixedVoter::class)
                 ->setArguments([$granting])
                 ->addTag('security.voter');
         }
@@ -122,12 +144,12 @@ class StrategyParityKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-strategy/'.$this->shape.'/'.md5(serialize([$this->voters, $this->decisionManager, $this->accessControl, $this->attribute]));
+        return sys_get_temp_dir() . '/access-control-bundle-strategy/' . $this->shape . '/' . md5(serialize([$this->voters, $this->decisionManager, $this->accessControl, $this->attribute]));
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-strategy/log';
+        return sys_get_temp_dir() . '/access-control-bundle-strategy/log';
     }
 
     protected function build(ContainerBuilder $container): void

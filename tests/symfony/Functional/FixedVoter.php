@@ -7,6 +7,7 @@ namespace AccessControl\Tests\Bundle\Functional;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
+use function in_array;
 
 /**
  * Always answers the same thing, so that a set of them separates one combining algorithm from
@@ -22,7 +23,7 @@ class FixedVoter implements VoterInterface
 
     public function vote(TokenInterface $token, mixed $subject, array $attributes, ?Vote $vote = null): int
     {
-        if (!\in_array('THING', $attributes, true)) {
+        if (! in_array('THING', $attributes, true)) {
             return self::ACCESS_ABSTAIN;
         }
 

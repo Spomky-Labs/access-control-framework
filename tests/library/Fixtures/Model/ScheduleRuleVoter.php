@@ -8,6 +8,7 @@ use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
 use Symfony\Component\Clock\ClockInterface;
+use function sprintf;
 
 /**
  * RuBAC: a system wide rule, which no permission held elsewhere may override.
@@ -16,12 +17,12 @@ use Symfony\Component\Clock\ClockInterface;
  * fill in, abstains when it does not apply, and its denial binds the whole decision under a
  * strategy that lets denials win.
  */
-final class ScheduleRuleVoter implements VoterInterface
+final readonly class ScheduleRuleVoter implements VoterInterface
 {
     public function __construct(
-        private readonly ClockInterface $clock,
-        private readonly int $opensAt = 9,
-        private readonly int $closesAt = 18,
+        private ClockInterface $clock,
+        private int $opensAt = 9,
+        private int $closesAt = 18,
     ) {
     }
 
@@ -37,12 +38,13 @@ final class ScheduleRuleVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        $hour = (int) $this->clock->now()->format('G');
+        $hour = (int) $this->clock->now()
+            ->format('G');
 
         if ($hour < $this->opensAt || $hour >= $this->closesAt) {
-            return AccessOutcome::deny(\sprintf('%dh is outside the %dh to %dh window.', $hour, $this->opensAt, $this->closesAt));
+            return AccessOutcome::deny(sprintf('%dh is outside the %dh to %dh window.', $hour, $this->opensAt, $this->closesAt));
         }
 
-        return AccessOutcome::abstain(\sprintf('%dh is inside the opening hours.', $hour));
+        return AccessOutcome::abstain(sprintf('%dh is inside the opening hours.', $hour));
     }
 }

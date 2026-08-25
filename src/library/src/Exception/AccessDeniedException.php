@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessControl\Exception;
 
+use RuntimeException;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 
 /**
@@ -11,11 +12,9 @@ use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
  * listener reading the attribute. Behind a firewall the exception listener decides instead, and may
  * redirect to the login page rather than answer 403.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 #[WithHttpStatus(403)]
-class AccessDeniedException extends \RuntimeException implements AccessDeniedExceptionInterface
+class AccessDeniedException extends RuntimeException implements AccessDeniedExceptionInterface
 {
 }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Test;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\DecisionVote;
 use AccessControl\Strategy\DenyOverridesStrategy;
 use AccessControl\Strategy\FirstApplicableStrategy;
 use AccessControl\Strategy\MajorityStrategy;
 use AccessControl\Strategy\PermitOverridesStrategy;
 use AccessControl\Test\AccessDecisionStrategyTestTrait;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Exercises the shipped trait the way a user would, and covers the four strategies as a matrix at

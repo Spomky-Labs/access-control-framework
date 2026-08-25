@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * An application migrating will hold both kinds of rule for a while, so they have to work side by
  * side rather than one replacing the other.
  */
-class RulesWithSecurityTest extends WebTestCase
+final class RulesWithSecurityTest extends WebTestCase
 {
     use AccessControlAssertionsTrait;
 
@@ -31,14 +31,14 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/admin', server: $this->credentials('alice'));
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
         $this->assertAccessWasGrantedOn('ROLE_ADMIN');
 
         static::ensureKernelShutdown();
         $client = static::createClient();
         $client->request('GET', '/rules/admin', server: $this->credentials('bob'));
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
     }
 
@@ -53,13 +53,13 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/staff', server: $this->credentials('alice'));
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
         $client->request('GET', '/rules/staff', server: $this->credentials('bob'));
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
     }
 
     /**
@@ -71,13 +71,13 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/local', server: $this->credentials('alice'));
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
         $client->request('GET', '/rules/local', server: $this->credentials('bob'));
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
     }
 
     /**
@@ -91,9 +91,9 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', 'http://localhost/rules/secure', server: $this->credentials('alice'));
 
-        $this->assertSame(301, $client->getResponse()->getStatusCode());
-        $this->assertSame('https://localhost/rules/secure', $client->getResponse()->headers->get('Location'));
-        $this->assertTrue(static::getContainer()->has('access_control.listener.channel'));
+        static::assertSame(301, $client->getResponse()->getStatusCode());
+        static::assertSame('https://localhost/rules/secure', $client->getResponse()->headers->get('Location'));
+        static::assertTrue(static::getContainer()->has('access_control.listener.channel'));
     }
 
     /**
@@ -106,8 +106,8 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/twig/template', server: $this->credentials('alice'));
 
-        $this->assertSame('admin|not-super', trim($client->getResponse()->getContent()));
-        $this->assertTrue(static::getContainer()->has('access_control.twig.extension'));
+        static::assertSame('admin|not-super', trim($client->getResponse()->getContent()));
+        static::assertTrue(static::getContainer()->has('access_control.twig.extension'));
         $this->assertAccessWasGrantedOn('ROLE_ADMIN');
     }
 
@@ -124,10 +124,10 @@ class RulesWithSecurityTest extends WebTestCase
             $functions[] = $function->getName();
         }
 
-        $this->assertContains('impersonation_exit_path', $functions);
-        $this->assertContains('access_decision', $functions);
-        $this->assertNotContains('is_granted', $functions);
-        $this->assertNotContains('is_granted_for_user', $functions);
+        static::assertContains('impersonation_exit_path', $functions);
+        static::assertContains('access_decision', $functions);
+        static::assertNotContains('is_granted', $functions);
+        static::assertNotContains('is_granted_for_user', $functions);
     }
 
     public function testTheInjectedCheckerWorksWithAFirewallToo()
@@ -135,7 +135,7 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/twig/injected', server: $this->credentials('bob'));
 
-        $this->assertSame('denied', $client->getResponse()->getContent());
+        static::assertSame('denied', $client->getResponse()->getContent());
     }
 
     /**
@@ -148,14 +148,17 @@ class RulesWithSecurityTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/helper/is-granted-attribute', server: $this->credentials('alice'));
 
-        $this->assertSame('reached', $client->getResponse()->getContent());
-        $this->assertTrue(static::getContainer()->has('access_control.listener.is_granted'));
-        $this->assertFalse(static::getContainer()->has('controller.is_granted_attribute_listener'));
+        static::assertSame('reached', $client->getResponse()->getContent());
+        static::assertTrue(static::getContainer()->has('access_control.listener.is_granted'));
+        static::assertFalse(static::getContainer()->has('controller.is_granted_attribute_listener'));
         $this->assertAccessDecisionCount(1);
     }
 
     private function credentials(string $user): array
     {
-        return ['PHP_AUTH_USER' => $user, 'PHP_AUTH_PW' => 'pa$$word'];
+        return [
+            'PHP_AUTH_USER' => $user,
+            'PHP_AUTH_PW' => 'pa$$word',
+        ];
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Psr\Log\NullLogger;
 use AccessControl\Bundle\AccessControlBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\TwigBundle\TwigBundle;
@@ -18,8 +18,6 @@ use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 /**
  * Twig without Security: is_granted() has to answer, since a template that calls it is the second
  * most common way an application asks, right after an attribute on a controller.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 class TwigKernel extends Kernel
 {
@@ -41,20 +39,22 @@ class TwigKernel extends Kernel
 
     protected function configureRoutes(RoutingConfigurator $routes): void
     {
-        $routes->import(__DIR__.'/TwigController.php', 'attribute')->prefix('/twig');
-        $routes->import(__DIR__.'/HelperController.php', 'attribute')->prefix('/helper');
+        $routes->import(__DIR__ . '/TwigController.php', 'attribute')->prefix('/twig');
+        $routes->import(__DIR__ . '/HelperController.php', 'attribute')->prefix('/helper');
     }
 
     protected function configureContainer(ContainerBuilder $container, LoaderInterface $loader): void
     {
         $container->loadFromExtension('framework', [
             'secret' => 'foo-secret',
-            'router' => ['utf8' => true],
+            'router' => [
+                'utf8' => true,
+            ],
             'test' => true,
         ]);
 
         $container->loadFromExtension('twig', [
-            'default_path' => __DIR__.'/templates',
+            'default_path' => __DIR__ . '/templates',
             'strict_variables' => true,
         ]);
 
@@ -75,12 +75,12 @@ class TwigKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-twig/cache';
+        return sys_get_temp_dir() . '/access-control-bundle-twig/cache';
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/access-control-bundle-twig/log';
+        return sys_get_temp_dir() . '/access-control-bundle-twig/log';
     }
 
     protected function build(ContainerBuilder $container): void

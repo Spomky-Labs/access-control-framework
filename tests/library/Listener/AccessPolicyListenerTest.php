@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Listener;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessPolicyContext;
@@ -31,6 +30,8 @@ use AccessControl\Tests\Fixtures\NotHandler;
 use AccessControl\Tests\Fixtures\Post;
 use AccessControl\Tests\Fixtures\PostVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\WithHttpStatus;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
@@ -42,7 +43,8 @@ final class AccessPolicyListenerTest extends TestCase
 
     public function testLeafPolicyIsGranted(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('granted'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('granted'));
 
         $this->expectNotToPerformAssertions();
     }
@@ -50,9 +52,10 @@ final class AccessPolicyListenerTest extends TestCase
     public function testDenialDoesNotLeakTheInternalDiagnostic(): void
     {
         $this->expectException(AccessDeniedException::class);
-        $this->expectExceptionMessage('Access Denied.');
+        $this->expectExceptionMessageIsOrContains('Access Denied.');
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('denied'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('denied'));
     }
 
     public function testTheDiagnosticRemainsObservableThroughTheDecisionEvent(): void
@@ -60,21 +63,24 @@ final class AccessPolicyListenerTest extends TestCase
         $dispatcher = new FakeEventDispatcher();
 
         try {
-            $this->createListener($dispatcher)->onKernelControllerArguments($this->createEvent('denied'));
-            $this->fail('An AccessDeniedException should have been thrown.');
+            $this->createListener($dispatcher)
+                ->onKernelControllerArguments($this->createEvent('denied'));
+            static::fail('An AccessDeniedException should have been thrown.');
         } catch (AccessDeniedException) {
         }
 
         $decisionEvents = array_values(array_filter($dispatcher->events, static fn (object $event): bool => $event instanceof AccessDecisionEvent));
 
-        $this->assertCount(1, $decisionEvents);
-        $this->assertSame('At least one voter denied access. The user does not have the required role.', $decisionEvents[0]->accessDecision->reason);
+        static::assertCount(1, $decisionEvents);
+        static::assertSame('At least one voter denied access. The user does not have the required role.', $decisionEvents[0]->accessDecision->reason);
     }
 
     public function testAnInapplicablePolicyDoesNotBlock(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('inapplicable'));
-        $this->createListener()->onKernelControllerArguments($this->createEvent('inapplicableAmongApplicable'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('inapplicable'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('inapplicableAmongApplicable'));
 
         $this->expectNotToPerformAssertions();
     }
@@ -83,30 +89,36 @@ final class AccessPolicyListenerTest extends TestCase
     {
         $this->expectException(AccessDeniedException::class);
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('inapplicableAmongDenied'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('inapplicableAmongDenied'));
     }
 
     public function testAllRequiresEveryPolicy(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('allGranted'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('allGranted'));
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('allPartiallyGranted'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('allPartiallyGranted'));
     }
 
     public function testAtLeastOneOfRequiresASinglePolicy(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('atLeastOneOfGranted'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('atLeastOneOfGranted'));
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('atLeastOneOfDenied'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('atLeastOneOfDenied'));
     }
 
     public function testCompositesNest(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('nested'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('nested'));
 
         $this->expectNotToPerformAssertions();
     }
@@ -114,18 +126,20 @@ final class AccessPolicyListenerTest extends TestCase
     public function testNestedDenialUsesTheOutermostPolicyMessage(): void
     {
         $this->expectException(AccessDeniedException::class);
-        $this->expectExceptionMessage('Nope.');
+        $this->expectExceptionMessageIsOrContains('Nope.');
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('nestedDenied'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('nestedDenied'));
     }
 
     public function testArgumentReferenceIsResolvedAtRuntime(): void
     {
         $post = new Post('Hello world');
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('realWorldExample', [$post]));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('realWorldExample', [$post]));
 
-        $this->assertSame([$post], $this->postVoter->votedOn);
+        static::assertSame([$post], $this->postVoter->votedOn);
     }
 
     /**
@@ -136,38 +150,44 @@ final class AccessPolicyListenerTest extends TestCase
     public function testDenialIsForbiddenAndLetsTheFirewallDecideTheResponse(): void
     {
         try {
-            $this->createListener()->onKernelControllerArguments($this->createEvent('denied'));
-            $this->fail('An AccessDeniedException should have been thrown.');
+            $this->createListener()
+                ->onKernelControllerArguments($this->createEvent('denied'));
+            static::fail('An AccessDeniedException should have been thrown.');
         } catch (AccessDeniedException $exception) {
-            $attributes = (new \ReflectionClass($exception))->getAttributes(WithHttpStatus::class);
+            $attributes = new ReflectionClass($exception)
+                ->getAttributes(WithHttpStatus::class);
 
-            $this->assertCount(1, $attributes);
-            $this->assertSame(403, $attributes[0]->newInstance()->statusCode);
+            static::assertCount(1, $attributes);
+            static::assertSame(403, $attributes[0]->newInstance()->statusCode);
         }
     }
 
     public function testCustomMessageIsCarriedOver(): void
     {
         $this->expectException(AccessDeniedException::class);
-        $this->expectExceptionMessage('Nope.');
+        $this->expectExceptionMessageIsOrContains('Nope.');
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('deniedWithACustomMessage'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('deniedWithACustomMessage'));
     }
 
     public function testControllerWithoutAttributeIsIgnored(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('noAttribute'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('noAttribute'));
 
         $this->expectNotToPerformAssertions();
     }
 
     public function testUserlandCombinatorNeedsNoChangeToTheComponent(): void
     {
-        $this->createListener()->onKernelControllerArguments($this->createEvent('userlandCombinator'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('userlandCombinator'));
 
         $this->expectException(AccessDeniedException::class);
 
-        $this->createListener()->onKernelControllerArguments($this->createEvent('userlandCombinatorDenied'));
+        $this->createListener()
+            ->onKernelControllerArguments($this->createEvent('userlandCombinatorDenied'));
     }
 
     public function testUnhandledPolicyIsReported(): void
@@ -175,7 +195,7 @@ final class AccessPolicyListenerTest extends TestCase
         $evaluator = new AccessPolicyEvaluator([new AllHandler()]);
 
         $this->expectException(UnsupportedAccessPolicyException::class);
-        $this->expectExceptionMessage(AccessPolicy::class);
+        $this->expectExceptionMessageIsOrContains(AccessPolicy::class);
 
         $evaluator->evaluate(new AccessPolicy('ROLE_ADMIN'), new AccessPolicyContext());
     }
@@ -183,7 +203,7 @@ final class AccessPolicyListenerTest extends TestCase
     private function createEvent(string $method, array $arguments = []): ControllerArgumentsEvent
     {
         return new ControllerArgumentsEvent(
-            $this->createStub(HttpKernelInterface::class),
+            static::createStub(HttpKernelInterface::class),
             [new AccessControlledController(), $method],
             $arguments,
             new Request(),

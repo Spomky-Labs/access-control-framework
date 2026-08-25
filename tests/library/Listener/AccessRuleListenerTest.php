@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Listener;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicy;
@@ -24,6 +23,7 @@ use AccessControl\Tests\Fixtures\FakeEventDispatcher;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Tests\Fixtures\SubjectRecordingVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestMatcher\PathRequestMatcher;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -39,7 +39,7 @@ final class AccessRuleListenerTest extends TestCase
      */
     public function testItRunsAfterTheFirewall()
     {
-        $this->assertSame(['onKernelRequest', 7], AccessRuleListener::getSubscribedEvents()[KernelEvents::REQUEST]);
+        static::assertSame(['onKernelRequest', 7], AccessRuleListener::getSubscribedEvents()[KernelEvents::REQUEST]);
     }
 
     public function testAMatchingRuleThatGrantsLetsTheRequestThrough()
@@ -53,7 +53,7 @@ final class AccessRuleListenerTest extends TestCase
     public function testAMatchingRuleThatDeniesStopsTheRequest()
     {
         $this->expectException(AccessDeniedException::class);
-        $this->expectExceptionMessage('Access Denied.');
+        $this->expectExceptionMessageIsOrContains('Access Denied.');
 
         $this->listenerFor([new AccessRule(new PathRequestMatcher('^/admin'), new AccessPolicy('ROLE_SUPER_ADMIN'))])
             ->onKernelRequest($this->requestEvent('/admin/users'));
@@ -78,7 +78,7 @@ final class AccessRuleListenerTest extends TestCase
         $this->listenerFor([new AccessRule(new PathRequestMatcher('^/'), null, 'https')], $dispatcher)
             ->onKernelRequest($this->requestEvent('/admin'));
 
-        $this->assertSame([], $dispatcher->events);
+        static::assertSame([], $dispatcher->events);
     }
 
     public function testASubRequestIsLeftAlone()
@@ -92,7 +92,7 @@ final class AccessRuleListenerTest extends TestCase
     public function testTheMessageOfThePolicyIsCarriedOver()
     {
         $this->expectException(AccessDeniedException::class);
-        $this->expectExceptionMessage('Staff only.');
+        $this->expectExceptionMessageIsOrContains('Staff only.');
 
         $this->listenerFor([new AccessRule(new PathRequestMatcher('^/'), new AccessPolicy('ROLE_SUPER_ADMIN', message: 'Staff only.'))])
             ->onKernelRequest($this->requestEvent('/admin'));
@@ -141,8 +141,10 @@ final class AccessRuleListenerTest extends TestCase
             voters: [$voter],
         )->onKernelRequest($event);
 
-        $this->assertSame([$event->getRequest()], $voter->subjects);
-        $this->assertSame(['request' => $event->getRequest()], $voter->environment[0]);
+        static::assertSame([$event->getRequest()], $voter->subjects);
+        static::assertSame([
+            'request' => $event->getRequest(),
+        ], $voter->environment[0]);
     }
 
     /**
@@ -157,8 +159,8 @@ final class AccessRuleListenerTest extends TestCase
 
         $queries = array_values(array_filter($dispatcher->events, static fn (object $event): bool => $event instanceof AccessQueryEvent));
 
-        $this->assertCount(1, $queries);
-        $this->assertSame('access_control.rules', $queries[0]->origin);
+        static::assertCount(1, $queries);
+        static::assertSame('access_control.rules', $queries[0]->origin);
     }
 
     /**
@@ -188,6 +190,6 @@ final class AccessRuleListenerTest extends TestCase
 
     private function requestEvent(string $path, int $type = HttpKernelInterface::MAIN_REQUEST): RequestEvent
     {
-        return new RequestEvent($this->createStub(HttpKernelInterface::class), Request::create($path), $type);
+        return new RequestEvent(static::createStub(HttpKernelInterface::class), Request::create($path), $type);
     }
 }

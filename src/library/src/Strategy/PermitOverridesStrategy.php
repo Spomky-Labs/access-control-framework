@@ -18,8 +18,6 @@ use AccessControl\DecisionVote;
  *
  * This is the "affirmative" strategy of the Security component.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class PermitOverridesStrategy implements StrategyInterface
@@ -37,11 +35,11 @@ final readonly class PermitOverridesStrategy implements StrategyInterface
         $deny = 0;
 
         foreach ($votes as $vote) {
-            if (DecisionVote::ACCESS_GRANTED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 return AccessDecision::grant($accessRequest, $votes, 'At least one voter granted access.');
             }
 
-            if (DecisionVote::ACCESS_DENIED === $vote->outcome->decision) {
+            if ($vote->outcome->decision === DecisionVote::ACCESS_DENIED) {
                 ++$deny;
             }
         }

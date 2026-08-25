@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Listener;
 
-use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessRequest;
 use AccessControl\DecisionVote;
@@ -15,6 +13,8 @@ use AccessControl\Test\Constraint\AccessWasDeniedBy;
 use AccessControl\Test\Constraint\AccessWasDeniedOn;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
@@ -25,6 +25,7 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 final class AccessDecisionLoggerListenerTest extends TestCase
 {
     private EventDispatcher $dispatcher;
+
     private AccessDecisionLoggerListener $logger;
 
     protected function setUp(): void
@@ -38,15 +39,15 @@ final class AccessDecisionLoggerListenerTest extends TestCase
     {
         $this->decide('ROLE_SUPER_ADMIN');
 
-        $this->assertCount(1, $this->logger->getEvents()->getDecisions());
-        $this->assertCount(1, $this->logger->getEvents()->getVotes());
+        static::assertCount(1, $this->logger->getEvents()->getDecisions());
+        static::assertCount(1, $this->logger->getEvents()->getVotes());
     }
 
     public function testADenialIsFoundByItsAttribute(): void
     {
         $this->decide('ROLE_SUPER_ADMIN');
 
-        $this->assertThat($this->logger->getEvents(), new AccessWasDeniedOn('ROLE_SUPER_ADMIN'));
+        static::assertThat($this->logger->getEvents(), new AccessWasDeniedOn('ROLE_SUPER_ADMIN'));
     }
 
     /**
@@ -57,15 +58,15 @@ final class AccessDecisionLoggerListenerTest extends TestCase
     {
         $this->decide('ROLE_SUPER_ADMIN');
 
-        $this->assertThat($this->logger->getEvents(), new AccessWasDeniedBy(RoleVoter::class));
+        static::assertThat($this->logger->getEvents(), new AccessWasDeniedBy(RoleVoter::class));
     }
 
     public function testAGrantedRunHoldsNoDenial(): void
     {
         $this->decide('ROLE_ADMIN');
 
-        $this->assertSame([], $this->logger->getEvents()->getVotesBy(RoleVoter::class, DecisionVote::ACCESS_DENIED));
-        $this->assertCount(1, $this->logger->getEvents()->getVotesBy(RoleVoter::class, DecisionVote::ACCESS_GRANTED));
+        static::assertSame([], $this->logger->getEvents()->getVotesBy(RoleVoter::class, DecisionVote::ACCESS_DENIED));
+        static::assertCount(1, $this->logger->getEvents()->getVotesBy(RoleVoter::class, DecisionVote::ACCESS_GRANTED));
     }
 
     /**
@@ -76,8 +77,8 @@ final class AccessDecisionLoggerListenerTest extends TestCase
         $this->decide('ROLE_ADMIN');
         $this->decide('ROLE_SUPER_ADMIN');
 
-        $this->assertCount(2, $this->logger->getEvents()->getDecisions());
-        $this->assertCount(1, $this->logger->getEvents()->getDecisionsOn('ROLE_SUPER_ADMIN'));
+        static::assertCount(2, $this->logger->getEvents()->getDecisions());
+        static::assertCount(1, $this->logger->getEvents()->getDecisionsOn('ROLE_SUPER_ADMIN'));
     }
 
     public function testResetEmptiesTheLog(): void
@@ -85,8 +86,8 @@ final class AccessDecisionLoggerListenerTest extends TestCase
         $this->decide('ROLE_ADMIN');
         $this->logger->reset();
 
-        $this->assertSame([], $this->logger->getEvents()->getDecisions());
-        $this->assertSame([], $this->logger->getEvents()->getVotes());
+        static::assertSame([], $this->logger->getEvents()->getDecisions());
+        static::assertSame([], $this->logger->getEvents()->getVotes());
     }
 
     public function testTheFailureTellsWhatWasActuallyDecided(): void
@@ -94,21 +95,21 @@ final class AccessDecisionLoggerListenerTest extends TestCase
         $this->decide('ROLE_SUPER_ADMIN');
 
         try {
-            $this->assertThat($this->logger->getEvents(), new AccessWasDeniedOn('ROLE_EDITOR'));
-            $this->fail('The constraint should not have matched.');
+            static::assertThat($this->logger->getEvents(), new AccessWasDeniedOn('ROLE_EDITOR'));
+            static::fail('The constraint should not have matched.');
         } catch (AssertionFailedError $failure) {
-            $this->assertStringContainsString('The following decisions were reached:', $failure->getMessage());
-            $this->assertStringContainsString('ACCESS_DENIED on "ROLE_SUPER_ADMIN"', $failure->getMessage());
+            static::assertStringContainsString('The following decisions were reached:', $failure->getMessage());
+            static::assertStringContainsString('ACCESS_DENIED on "ROLE_SUPER_ADMIN"', $failure->getMessage());
         }
     }
 
     public function testTheFailureSaysWhenNothingWasDecidedAtAll(): void
     {
         try {
-            $this->assertThat($this->logger->getEvents(), new AccessWasDeniedOn('ROLE_ADMIN'));
-            $this->fail('The constraint should not have matched.');
+            static::assertThat($this->logger->getEvents(), new AccessWasDeniedOn('ROLE_ADMIN'));
+            static::fail('The constraint should not have matched.');
         } catch (AssertionFailedError $failure) {
-            $this->assertStringContainsString('No access decision was reached at all.', $failure->getMessage());
+            static::assertStringContainsString('No access decision was reached at all.', $failure->getMessage());
         }
     }
 
@@ -117,11 +118,11 @@ final class AccessDecisionLoggerListenerTest extends TestCase
         $this->decide('ROLE_ADMIN');
 
         try {
-            $this->assertThat($this->logger->getEvents(), new AccessWasDeniedBy(RoleVoter::class));
-            $this->fail('The constraint should not have matched.');
+            static::assertThat($this->logger->getEvents(), new AccessWasDeniedBy(RoleVoter::class));
+            static::fail('The constraint should not have matched.');
         } catch (AssertionFailedError $failure) {
-            $this->assertStringContainsString('The following votes were cast:', $failure->getMessage());
-            $this->assertStringContainsString(RoleVoter::class.' cast ACCESS_GRANTED', $failure->getMessage());
+            static::assertStringContainsString('The following votes were cast:', $failure->getMessage());
+            static::assertStringContainsString(RoleVoter::class . ' cast ACCESS_GRANTED', $failure->getMessage());
         }
     }
 

@@ -10,10 +10,10 @@ use AccessControl\Event\AccessQueryEvent;
 use AccessControl\Exception\UnsupportedAccessPolicyException;
 use AccessControl\Handler\AccessPolicyHandlerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use function is_array;
+use function sprintf;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class AccessPolicyEvaluator
@@ -65,7 +65,7 @@ final class AccessPolicyEvaluator
 
         $this->dispatcher?->dispatch(new AccessPolicyEvent($accessPolicy, $outcome, $parent));
 
-        if (!$this->pending) {
+        if (! $this->pending) {
             $this->dispatcher?->dispatch(new AccessQueryEvent($outcome->decision, $context->origin));
         }
 
@@ -74,7 +74,7 @@ final class AccessPolicyEvaluator
 
     private function findHandler(AccessPolicyInterface $accessPolicy): AccessPolicyHandlerInterface
     {
-        $this->handlersList ??= \is_array($this->handlers) ? array_values($this->handlers) : iterator_to_array($this->handlers, false);
+        $this->handlersList ??= is_array($this->handlers) ? array_values($this->handlers) : iterator_to_array($this->handlers, false);
 
         foreach ($this->handlersList as $handler) {
             if ($handler->supports($accessPolicy)) {
@@ -82,6 +82,6 @@ final class AccessPolicyEvaluator
             }
         }
 
-        throw new UnsupportedAccessPolicyException(\sprintf('No handler supports the "%s" access policy.', $accessPolicy::class));
+        throw new UnsupportedAccessPolicyException(sprintf('No handler supports the "%s" access policy.', $accessPolicy::class));
     }
 }

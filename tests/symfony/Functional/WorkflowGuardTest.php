@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
+use AccessControl\Bridge\Workflow\GuardListener;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use AccessControl\Bridge\Workflow\GuardListener;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -22,7 +22,7 @@ use Symfony\Component\Workflow\EventListener\GuardListener as WorkflowGuardListe
  * belong to the authorization half and are due to move to this component, so the replacement is
  * written now and measured against the original, rather than improvised the day Security loses them.
  */
-class WorkflowGuardTest extends TestCase
+final class WorkflowGuardTest extends TestCase
 {
     /**
      * is_valid() is the one guard function that has nothing to do with access: Workflow adds it to
@@ -52,11 +52,11 @@ class WorkflowGuardTest extends TestCase
         $both = $this->canPublish(WorkflowGuardKernel::BOTH, $guard, $title);
         $alone = $this->canPublish(WorkflowGuardKernel::ACCESS_CONTROL, $guard, $title);
 
-        $this->assertSame($expected, $both, 'Installing the bundle did not answer what this test assumes.');
-        $this->assertSame($both, $alone, 'The component alone does not guard like the two bundles together.');
+        static::assertSame($expected, $both, 'Installing the bundle did not answer what this test assumes.');
+        static::assertSame($both, $alone, 'The component alone does not guard like the two bundles together.');
 
-        if (!str_contains($guard, 'is_granted')) {
-            $this->assertSame($both, $security, 'Security alone does not guard alike either.');
+        if (! str_contains($guard, 'is_granted')) {
+            static::assertSame($both, $security, 'Security alone does not guard alike either.');
         }
     }
 
@@ -68,10 +68,11 @@ class WorkflowGuardTest extends TestCase
     public function testAGuardOnlyBlocksItsOwnTransition()
     {
         $kernel = $this->boot(WorkflowGuardKernel::ACCESS_CONTROL, "is_granted('EDIT', subject)");
-        $workflow = $kernel->getContainer()->get('test.workflow.article');
+        $workflow = $kernel->getContainer()
+            ->get('test.workflow.article');
 
-        $this->assertTrue($workflow->can($this->article(), 'publish'));
-        $this->assertFalse($workflow->can($this->article(), 'discard'));
+        static::assertTrue($workflow->can($this->article(), 'publish'));
+        static::assertFalse($workflow->can($this->article(), 'discard'));
     }
 
     /**
@@ -91,7 +92,7 @@ class WorkflowGuardTest extends TestCase
     #[DataProvider('provideExpectedListeners')]
     public function testWhichListenerEachShapeCompiles(string $shape, string $expected)
     {
-        $this->assertSame($expected, $this->guardListenerClassOf($shape));
+        static::assertSame($expected, $this->guardListenerClassOf($shape));
     }
 
     /**
@@ -102,14 +103,17 @@ class WorkflowGuardTest extends TestCase
     public function testAGuardWithNobodyToApplyItStillRefusesToCompile()
     {
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('The "security.token_storage" service is needed to be able to use the workflow guard listener.');
+        $this->expectExceptionMessageIsOrContains('The "security.token_storage" service is needed to be able to use the workflow guard listener.');
 
-        (new UnguardedWorkflowKernel())->boot();
+        new UnguardedWorkflowKernel()
+            ->boot();
     }
 
     private function canPublish(string $shape, string $guard, ?string $title): bool
     {
-        $workflow = $this->boot($shape, $guard)->getContainer()->get('test.workflow.article');
+        $workflow = $this->boot($shape, $guard)
+            ->getContainer()
+            ->get('test.workflow.article');
 
         return $workflow->can($this->article($title), 'publish');
     }
@@ -140,9 +144,10 @@ class WorkflowGuardTest extends TestCase
             {
                 parent::build($container);
 
-                $container->addCompilerPass(new class($this) implements CompilerPassInterface {
-                    public function __construct(private readonly Kernel $kernel)
-                    {
+                $container->addCompilerPass(new readonly class($this) implements CompilerPassInterface {
+                    public function __construct(
+                        private Kernel $kernel
+                    ) {
                     }
 
                     public function process(ContainerBuilder $container): void

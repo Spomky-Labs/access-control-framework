@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Model;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessDecision;
 use AccessControl\AccessEnvironment;
@@ -29,6 +28,7 @@ use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleVoter;
 use AccessControl\VoterInterface;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 
 /**
@@ -38,11 +38,13 @@ use Symfony\Component\Clock\MockClock;
  * the requester, the attribute and the subject are all mixed, and the environment travels in the
  * environment bag, which is what lets a model bring its own vocabulary.
  */
-class AccessControlModelsTest extends TestCase
+final class AccessControlModelsTest extends TestCase
 {
     public function testDiscretionaryAccessControl()
     {
-        $document = new Document('budget', owner: 'alice', grants: ['read' => ['bob']]);
+        $document = new Document('budget', owner: 'alice', grants: [
+            'read' => ['bob'],
+        ]);
         $voters = [new OwnershipVoter()];
 
         $this->assertGranted($voters, new AccessRequest('alice', 'read', $document));
@@ -94,7 +96,9 @@ class AccessControlModelsTest extends TestCase
 
     public function testRoleBasedAccessControl()
     {
-        $voters = [new RoleVoter(new RoleHierarchy(['ROLE_ADMIN' => ['ROLE_USER']]))];
+        $voters = [new RoleVoter(new RoleHierarchy([
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ]))];
         $admin = new StandaloneRequester(['ROLE_ADMIN']);
 
         $this->assertGranted($voters, new AccessRequest($admin, 'ROLE_ADMIN'));
@@ -104,14 +108,27 @@ class AccessControlModelsTest extends TestCase
 
     public function testAttributeBasedAccessControl()
     {
-        $requester = ['department' => 'sales', 'seniority' => 3];
-        $ownDepartment = ['department' => 'sales'];
-        $otherDepartment = ['department' => 'legal'];
+        $requester = [
+            'department' => 'sales',
+            'seniority' => 3,
+        ];
+        $ownDepartment = [
+            'department' => 'sales',
+        ];
+        $otherDepartment = [
+            'department' => 'legal',
+        ];
         $voters = [new AttributeBasedVoter()];
 
-        $this->assertGranted($voters, new AccessRequest($requester, 'read', $ownDepartment, new AccessEnvironment(['network' => 'corporate'])));
-        $this->assertDenied($voters, new AccessRequest($requester, 'read', $otherDepartment, new AccessEnvironment(['network' => 'corporate'])));
-        $this->assertDenied($voters, new AccessRequest($requester, 'read', $ownDepartment, new AccessEnvironment(['network' => 'public'])));
+        $this->assertGranted($voters, new AccessRequest($requester, 'read', $ownDepartment, new AccessEnvironment([
+            'network' => 'corporate',
+        ])));
+        $this->assertDenied($voters, new AccessRequest($requester, 'read', $otherDepartment, new AccessEnvironment([
+            'network' => 'corporate',
+        ])));
+        $this->assertDenied($voters, new AccessRequest($requester, 'read', $ownDepartment, new AccessEnvironment([
+            'network' => 'public',
+        ])));
     }
 
     public function testRelationshipBasedAccessControl()
@@ -142,21 +159,41 @@ class AccessControlModelsTest extends TestCase
     {
         $voters = [new ContextVoter()];
 
-        $this->assertGranted($voters, new AccessRequest('alice', 'read', null, new AccessEnvironment(['trusted_device' => true, 'risk' => 0.1])));
-        $this->assertDenied($voters, new AccessRequest('alice', 'read', null, new AccessEnvironment(['trusted_device' => true, 'risk' => 0.9])));
-        $this->assertDenied($voters, new AccessRequest('alice', 'read', null, new AccessEnvironment(['trusted_device' => false, 'risk' => 0.1])));
+        $this->assertGranted($voters, new AccessRequest('alice', 'read', null, new AccessEnvironment([
+            'trusted_device' => true,
+            'risk' => 0.1,
+        ])));
+        $this->assertDenied($voters, new AccessRequest('alice', 'read', null, new AccessEnvironment([
+            'trusted_device' => true,
+            'risk' => 0.9,
+        ])));
+        $this->assertDenied($voters, new AccessRequest('alice', 'read', null, new AccessEnvironment([
+            'trusted_device' => false,
+            'risk' => 0.1,
+        ])));
     }
 
     public function testPolicyBasedAccessControl()
     {
         $voters = [new PolicyRepositoryVoter([
-            new PolicyRule('export', ['department' => 'finance'], true, 'Finance may export.'),
-            new PolicyRule('export', ['contractor' => true], false, 'Contractors may never export.'),
+            new PolicyRule('export', [
+                'department' => 'finance',
+            ], true, 'Finance may export.'),
+            new PolicyRule('export', [
+                'contractor' => true,
+            ], false, 'Contractors may never export.'),
         ])];
 
-        $this->assertGranted($voters, new AccessRequest(['department' => 'finance'], 'export'));
-        $this->assertDenied($voters, new AccessRequest(['department' => 'sales'], 'export'));
-        $this->assertDenied($voters, new AccessRequest(['department' => 'finance', 'contractor' => true], 'export'));
+        $this->assertGranted($voters, new AccessRequest([
+            'department' => 'finance',
+        ], 'export'));
+        $this->assertDenied($voters, new AccessRequest([
+            'department' => 'sales',
+        ], 'export'));
+        $this->assertDenied($voters, new AccessRequest([
+            'department' => 'finance',
+            'contractor' => true,
+        ], 'export'));
     }
 
     /**
@@ -174,7 +211,10 @@ class AccessControlModelsTest extends TestCase
 
     public function testIdentityBasedAccessControl()
     {
-        $voters = [new IdentityVoter(['deploy' => ['alice', 'bob']])];
+        $voters = [
+            new IdentityVoter([
+                'deploy' => ['alice', 'bob'],
+            ])];
 
         $this->assertGranted($voters, new AccessRequest('alice', 'deploy'));
         $this->assertDenied($voters, new AccessRequest('carol', 'deploy'));
@@ -203,8 +243,12 @@ class AccessControlModelsTest extends TestCase
             new OwnershipVoter(),
             new MandatoryAccessVoter(),
             new RoleVoter(),
-            new IdentityVoter(['deploy' => ['bob']]),
-            new RelationshipVoter(['doc:roadmap#viewer' => ['user:carol']]),
+            new IdentityVoter([
+                'deploy' => ['bob'],
+            ]),
+            new RelationshipVoter([
+                'doc:roadmap#viewer' => ['user:carol'],
+            ]),
         ];
 
         $this->assertGranted($voters, new AccessRequest('alice', 'read', $document), 'deny_overrides');
@@ -220,7 +264,7 @@ class AccessControlModelsTest extends TestCase
     {
         $decision = $this->decide($voters, $accessRequest, $strategy);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision, $decision->reason ?? '');
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision, $decision->reason ?? '');
     }
 
     /**
@@ -230,7 +274,7 @@ class AccessControlModelsTest extends TestCase
     {
         $decision = $this->decide($voters, $accessRequest, $strategy);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision, $decision->reason ?? '');
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision, $decision->reason ?? '');
     }
 
     /**

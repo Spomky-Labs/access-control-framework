@@ -18,6 +18,7 @@ use Symfony\Component\HttpKernel\DataCollector\DataCollector;
 use Symfony\Component\HttpKernel\DataCollector\LateDataCollectorInterface;
 use Symfony\Component\VarDumper\Caster\ClassStub;
 use Symfony\Component\VarDumper\Cloner\Data;
+use Throwable;
 
 /**
  * Reads back what the decision logger recorded, and records nothing of its own.
@@ -26,8 +27,6 @@ use Symfony\Component\VarDumper\Cloner\Data;
  * recovered by matching the outcomes the logger saw being cast against the ones the decision kept,
  * a join that belongs here rather than in the decision, which no application should have to carry a
  * profiler field for.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  *
@@ -63,7 +62,7 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
      * Nothing to do here: the decisions are recorded live by the logger, and cloned as late as
      * possible.
      */
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    public function collect(Request $request, Response $response, ?Throwable $exception = null): void
     {
     }
 
@@ -101,7 +100,7 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
             if ($event instanceof AccessPolicyEvent) {
                 $pendingPolicies[] = [
                     'id' => spl_object_id($event->accessPolicy),
-                    'parent' => null === $event->parent ? null : spl_object_id($event->parent),
+                    'parent' => $event->parent === null ? null : spl_object_id($event->parent),
                     'policy' => new ClassStub($event->accessPolicy::class),
                     'attribute' => $event->accessPolicy instanceof AccessPolicy ? $event->accessPolicy->attribute : null,
                     'decision' => $event->outcome->decision->value,
@@ -111,16 +110,16 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
                 continue;
             }
 
-            if (!$event instanceof AccessDecisionEvent) {
+            if (! $event instanceof AccessDecisionEvent) {
                 continue;
             }
 
             ++$decisionCount;
-            $granted += DecisionVote::ACCESS_GRANTED === $event->accessDecision->decision ? 1 : 0;
+            $granted += $event->accessDecision->decision === DecisionVote::ACCESS_GRANTED ? 1 : 0;
 
             $pending[] = [
                 'id' => spl_object_id($event->accessRequest),
-                'parent' => null === $event->parent ? null : spl_object_id($event->parent),
+                'parent' => $event->parent === null ? null : spl_object_id($event->parent),
                 'caller' => $events->getCaller($event),
             ] + $this->collectDecision($event);
         }
@@ -169,7 +168,7 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
         foreach ($decisions as $decision) {
             $current[] = $decision;
 
-            if (null === $decision['parent']) {
+            if ($decision['parent'] === null) {
                 $groups[] = $current;
                 $current = [];
             }
@@ -198,7 +197,7 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
         $byParent = [];
         foreach ($decisions as $index => $decision) {
             $parent = $decision['parent'];
-            $byParent[null !== $parent && isset($known[$parent]) ? $parent : 'root'][] = $index;
+            $byParent[$parent !== null && isset($known[$parent]) ? $parent : 'root'][] = $index;
         }
 
         $ordered = [];
@@ -208,7 +207,9 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
                 $id = $decision['id'];
                 unset($decision['id'], $decision['parent'], $decision['caller']);
 
-                $ordered[] = ['depth' => $depth] + $decision;
+                $ordered[] = [
+                    'depth' => $depth,
+                ] + $decision;
                 $walk($id, $depth + 1);
             }
         };
@@ -258,7 +259,9 @@ class AccessControlDataCollector extends DataCollector implements LateDataCollec
      */
     private static function describe(VoterInterface $voter): array
     {
-        $described = ['voter' => new ClassStub($voter::class)];
+        $described = [
+            'voter' => new ClassStub($voter::class),
+        ];
 
         if ($voter instanceof VoterAdapter) {
             $described['bridged'] = new ClassStub($voter->voter::class);

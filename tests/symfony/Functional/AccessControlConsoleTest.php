@@ -18,7 +18,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * command looks allowed under it. The console has to be entered through an Application carrying
  * the dispatcher, which is what ApplicationTester does.
  */
-class AccessControlConsoleTest extends KernelTestCase
+final class AccessControlConsoleTest extends KernelTestCase
 {
     use AccessControlAssertionsTrait;
 
@@ -36,7 +36,9 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testAGuardedCommandRunsWhenItsConditionDoesNotHold()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled']);
+        $tester->run([
+            'command' => 'app:access-controlled',
+        ]);
 
         $tester->assertCommandIsSuccessful();
         $this->assertAccessDecisionCount(0);
@@ -45,9 +47,12 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testAGuardedCommandIsStoppedWhenAccessIsDenied()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled', '--destructive' => true]);
+        $tester->run([
+            'command' => 'app:access-controlled',
+            '--destructive' => true,
+        ]);
 
-        $this->assertSame(ConsoleCommandEvent::RETURN_CODE_DISABLED, $tester->getStatusCode());
+        static::assertSame(ConsoleCommandEvent::RETURN_CODE_DISABLED, $tester->getStatusCode());
         $this->assertAccessWasDeniedOn('DELETE');
         $this->assertAccessWasDeniedBy(PermissionVoter::class);
     }
@@ -63,10 +68,13 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testTheDefaultExitStatusOfADenial()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled', '--destructive' => true]);
+        $tester->run([
+            'command' => 'app:access-controlled',
+            '--destructive' => true,
+        ]);
 
-        $this->assertSame(113, $tester->getStatusCode());
-        $this->assertSame(113, ConsoleCommandEvent::RETURN_CODE_DISABLED, 'The exit status is meant to be the one the console already has a name for.');
+        static::assertSame(113, $tester->getStatusCode());
+        static::assertSame(113, ConsoleCommandEvent::RETURN_CODE_DISABLED, 'The exit status is meant to be the one the console already has a name for.');
     }
 
     /**
@@ -75,10 +83,12 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testAnAllowedCommandKeepsItsOwnExitStatus()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled']);
+        $tester->run([
+            'command' => 'app:access-controlled',
+        ]);
 
-        $this->assertSame(0, $tester->getStatusCode());
-        $this->assertStringContainsString('done', $tester->getDisplay());
+        static::assertSame(0, $tester->getStatusCode());
+        static::assertStringContainsString('done', $tester->getDisplay());
     }
 
     /**
@@ -92,10 +102,13 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testTheReasonOfADenialReachesTheTerminal()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled', '--destructive' => true]);
+        $tester->run([
+            'command' => 'app:access-controlled',
+            '--destructive' => true,
+        ]);
 
-        $this->assertStringContainsString(AccessControlledCommand::DENIAL, $tester->getDisplay());
-        $this->assertStringNotContainsString('done', $tester->getDisplay());
+        static::assertStringContainsString(AccessControlledCommand::DENIAL, $tester->getDisplay());
+        static::assertStringNotContainsString('done', $tester->getDisplay());
     }
 
     /**
@@ -107,16 +120,23 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testAGuardedCommandIsStoppedUnderProfileToo()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled', '--destructive' => true, '--profile' => true]);
+        $tester->run([
+            'command' => 'app:access-controlled',
+            '--destructive' => true,
+            '--profile' => true,
+        ]);
 
-        $this->assertSame(ConsoleCommandEvent::RETURN_CODE_DISABLED, $tester->getStatusCode());
+        static::assertSame(ConsoleCommandEvent::RETURN_CODE_DISABLED, $tester->getStatusCode());
         $this->assertAccessWasDeniedOn('DELETE');
     }
 
     public function testAProfiledCommandStillRunsWhenAllowed()
     {
         $tester = $this->consoleTester();
-        $tester->run(['command' => 'app:access-controlled', '--profile' => true]);
+        $tester->run([
+            'command' => 'app:access-controlled',
+            '--profile' => true,
+        ]);
 
         $tester->assertCommandIsSuccessful();
         $this->assertAccessDecisionCount(0);
@@ -134,9 +154,12 @@ class AccessControlConsoleTest extends KernelTestCase
     public function testAnApplicationDecidesItsOwnExitCode()
     {
         $tester = $this->consoleTester(withExitCodeListener: true);
-        $tester->run(['command' => 'app:access-controlled', '--destructive' => true]);
+        $tester->run([
+            'command' => 'app:access-controlled',
+            '--destructive' => true,
+        ]);
 
-        $this->assertSame(ConsoleExitCodeListener::EXIT_CODE, $tester->getStatusCode());
+        static::assertSame(ConsoleExitCodeListener::EXIT_CODE, $tester->getStatusCode());
         $this->assertAccessWasDeniedOn('DELETE');
     }
 

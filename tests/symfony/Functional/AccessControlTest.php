@@ -7,12 +7,13 @@ namespace AccessControl\Tests\Bundle\Functional;
 use AccessControl\Bundle\Test\AccessControlAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Throwable;
 
 /**
  * The bundle wired into an application that has no Security at all, which is half the point of the
  * component being independent.
  */
-class AccessControlTest extends WebTestCase
+final class AccessControlTest extends WebTestCase
 {
     use AccessControlAssertionsTrait;
 
@@ -26,7 +27,7 @@ class AccessControlTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/access-control/open');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
         $this->assertAccessDecisionCount(0);
     }
 
@@ -35,8 +36,8 @@ class AccessControlTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/access-control/edit');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertSame('edited', $client->getResponse()->getContent());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame('edited', $client->getResponse()->getContent());
         $this->assertAccessWasGrantedOn('EDIT');
         $this->assertAccessWasNotDeniedOn('EDIT');
     }
@@ -52,9 +53,9 @@ class AccessControlTest extends WebTestCase
 
         try {
             $client->request('GET', '/access-control/delete');
-            $this->fail('Access should have been denied.');
-        } catch (\Throwable $exception) {
-            $this->assertStringContainsString('Access Denied', $exception->getMessage());
+            static::fail('Access should have been denied.');
+        } catch (Throwable $exception) {
+            static::assertStringContainsString('Access Denied', $exception->getMessage());
         }
 
         $this->assertAccessWasDeniedOn('DELETE');
@@ -68,8 +69,8 @@ class AccessControlTest extends WebTestCase
 
         try {
             $client->request('GET', '/access-control/both');
-            $this->fail('Access should have been denied.');
-        } catch (\Throwable) {
+            static::fail('Access should have been denied.');
+        } catch (Throwable) {
         }
 
         $this->assertAccessWasGrantedOn('EDIT');
@@ -85,7 +86,7 @@ class AccessControlTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/access-control/conditional');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
         $this->assertAccessDecisionCount(0);
     }
 
@@ -96,8 +97,8 @@ class AccessControlTest extends WebTestCase
 
         try {
             $client->request('POST', '/access-control/conditional');
-            $this->fail('Access should have been denied.');
-        } catch (\Throwable) {
+            static::fail('Access should have been denied.');
+        } catch (Throwable) {
         }
 
         $this->assertAccessWasDeniedOn('DELETE');
@@ -113,7 +114,7 @@ class AccessControlTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/access-control/delete');
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('DELETE');
         $this->assertAccessWasDeniedBy(PermissionVoter::class);
     }
@@ -125,9 +126,9 @@ class AccessControlTest extends WebTestCase
 
         try {
             $client->request('GET', '/access-control/custom-message');
-            $this->fail('Access should have been denied.');
-        } catch (\Throwable $exception) {
-            $this->assertSame('You may not delete this.', $exception->getMessage());
+            static::fail('Access should have been denied.');
+        } catch (Throwable $exception) {
+            static::assertSame('You may not delete this.', $exception->getMessage());
         }
     }
 }

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AccessControl\Bundle\Twig;
 
+use LogicException;
 use Symfony\Bridge\Twig\Extension\SecurityExtension;
 use Symfony\Component\Security\Core\Authorization\AccessDecision;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
+use function in_array;
+use function sprintf;
 
 /**
  * Publishes what Security's Twig extension offers beyond authorization, and nothing else.
@@ -29,8 +32,6 @@ use Twig\TwigFunction;
  * The cost of declaring them is that a function Security adds later would be left out, so the list
  * is checked against the extension's own and a stranger raises at build time.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class SecurityExtensionWithoutAuthorization extends AbstractExtension
@@ -38,12 +39,12 @@ final class SecurityExtensionWithoutAuthorization extends AbstractExtension
     /**
      * Answered by the AccessControl component from the moment this bundle is registered.
      */
-    public const TAKEN_OVER = ['is_granted', 'is_granted_for_user'];
+    public const array TAKEN_OVER = ['is_granted', 'is_granted_for_user'];
 
     /**
      * Left to Security, and delegated method by method rather than borrowed.
      */
-    public const DELEGATED = [
+    public const array DELEGATED = [
         'access_decision' => 'getAccessDecision',
         'access_decision_for_user' => 'getAccessDecisionForUser',
         'impersonation_exit_url' => 'getImpersonateExitUrl',
@@ -62,12 +63,12 @@ final class SecurityExtensionWithoutAuthorization extends AbstractExtension
         $functions = [];
 
         foreach ($this->securityExtension->getFunctions() as $function) {
-            if (\in_array($name = $function->getName(), self::TAKEN_OVER, true)) {
+            if (in_array($name = $function->getName(), self::TAKEN_OVER, true)) {
                 continue;
             }
 
-            if (!isset(self::DELEGATED[$name])) {
-                throw new \LogicException(\sprintf('"%s" publishes a "%s()" function this bundle knows nothing about. Either delegate it in "%s", or take it over in the AccessControl component.', SecurityExtension::class, $name, self::class));
+            if (! isset(self::DELEGATED[$name])) {
+                throw new LogicException(sprintf('"%s" publishes a "%s()" function this bundle knows nothing about. Either delegate it in "%s", or take it over in the AccessControl component.', SecurityExtension::class, $name, self::class));
             }
 
             $functions[] = new TwigFunction($name, $this->{self::DELEGATED[$name]}(...));

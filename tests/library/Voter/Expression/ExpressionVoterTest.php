@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Voter\Expression;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessEnvironment;
 use AccessControl\AccessRequest;
@@ -19,6 +18,7 @@ use AccessControl\Tests\Fixtures\SubjectRecordingVoter;
 use AccessControl\Voter\ABAC\AuthenticatedVoter;
 use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
@@ -27,39 +27,43 @@ final class ExpressionVoterTest extends TestCase
 {
     public function testAStringAttributeIsNeverEvaluatedAsAnExpression(): void
     {
-        $outcome = $this->createVoter()->vote(new AccessRequest(new FakeToken(new FakeUser()), 'ROLE_ADMIN'));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new FakeToken(new FakeUser()), 'ROLE_ADMIN'));
 
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
-        $this->assertSame('The attribute is not an expression.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
+        static::assertSame('The attribute is not an expression.', $outcome->reason);
     }
 
     public function testTheFailingExpressionIsReported(): void
     {
         $expression = new Expression('"ROLE_SUPER_ADMIN" in role_names');
 
-        $outcome = $this->createVoter()->vote(new AccessRequest(new FakeToken(new FakeUser()), $expression));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new FakeToken(new FakeUser()), $expression));
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
-        $this->assertSame('Expression ("ROLE_SUPER_ADMIN" in role_names) is false.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $outcome->decision);
+        static::assertSame('Expression ("ROLE_SUPER_ADMIN" in role_names) is false.', $outcome->reason);
     }
 
     public function testTheSatisfiedExpressionIsReported(): void
     {
         $expression = new Expression('"ROLE_USER" in role_names and is_authenticated()');
 
-        $outcome = $this->createVoter()->vote(new AccessRequest(new FakeToken(new FakeUser()), $expression));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest(new FakeToken(new FakeUser()), $expression));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
-        $this->assertSame('Expression ("ROLE_USER" in role_names and is_authenticated()) is true.', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame('Expression ("ROLE_USER" in role_names and is_authenticated()) is true.', $outcome->reason);
     }
 
     public function testARequesterThatIsNotATokenLeavesTheTokenVariableNull(): void
     {
         $expression = new Expression('token === null and not is_authenticated()');
 
-        $outcome = $this->createVoter()->vote(new AccessRequest('an-api-key', $expression));
+        $outcome = $this->createVoter()
+            ->vote(new AccessRequest('an-api-key', $expression));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $outcome->decision);
     }
 
     public function testANestedQuestionInheritsTheEnvironmentOfTheEnclosingOne(): void
@@ -68,9 +72,13 @@ final class ExpressionVoterTest extends TestCase
         $voter = $this->createVoter($nested);
         $expression = new Expression('is_granted("nested")');
 
-        $voter->vote(new AccessRequest(new FakeToken(new FakeUser()), $expression, null, new AccessEnvironment(['request' => 'the enclosing one'])));
+        $voter->vote(new AccessRequest(new FakeToken(new FakeUser()), $expression, null, new AccessEnvironment([
+            'request' => 'the enclosing one',
+        ])));
 
-        $this->assertSame([['request' => 'the enclosing one']], $nested->environment);
+        static::assertSame([[
+            'request' => 'the enclosing one',
+        ]], $nested->environment);
     }
 
     /**
@@ -82,7 +90,7 @@ final class ExpressionVoterTest extends TestCase
         $requester = new DelegatedRequester(new StandaloneRequester(['ROLE_ADMIN']), ['ROLE_USER']);
         $expression = new Expression('"ROLE_ADMIN" in actor.getRoles()');
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->createVoter()->vote(new AccessRequest($requester, $expression))->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->createVoter()->vote(new AccessRequest($requester, $expression))->decision);
     }
 
     /**
@@ -93,9 +101,10 @@ final class ExpressionVoterTest extends TestCase
     public function testTheActorIsAbsentWhenNobodyIsActing(): void
     {
         $this->expectException(SyntaxError::class);
-        $this->expectExceptionMessage('Variable "actor" is not valid');
+        $this->expectExceptionMessageIsOrContains('Variable "actor" is not valid');
 
-        $this->createVoter()->vote(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), new Expression('actor is not null')));
+        $this->createVoter()
+            ->vote(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), new Expression('actor is not null')));
     }
 
     private function createVoter(?SubjectRecordingVoter $nestedVoter = null): ExpressionVoter
@@ -103,12 +112,12 @@ final class ExpressionVoterTest extends TestCase
         $manager = null;
         $trustResolver = new AuthenticationTrustResolver();
 
-        $voters = (static function () use (&$manager, &$voter, $trustResolver, $nestedVoter) {
+        $voters = (static function () use (&$voter, $trustResolver, $nestedVoter) {
             yield $voter;
             yield new RoleVoter();
             yield new AuthenticatedVoter($trustResolver);
 
-            if (null !== $nestedVoter) {
+            if ($nestedVoter !== null) {
                 yield $nestedVoter;
             }
         })();

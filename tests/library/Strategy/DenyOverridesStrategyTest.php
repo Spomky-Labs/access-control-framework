@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Strategy;
 
-use PHPUnit\Framework\Attributes\DataProvider;
 use AccessControl\AccessRequest;
 use AccessControl\DecisionVote;
 use AccessControl\Tests\Fixtures\FakeToken;
 use AccessControl\Tests\Fixtures\FakeUserWithRole;
 use AccessControl\Tests\StrategyTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class DenyOverridesStrategyTest extends StrategyTestCase
 {
@@ -20,8 +20,8 @@ final class DenyOverridesStrategyTest extends StrategyTestCase
 
         $decision = $accessControlManger->decide($accessRequest, 'deny_overrides');
 
-        $this->assertEquals($expectedDecision, $decision->decision);
-        $this->assertEquals($reason, $decision->reason);
+        static::assertEquals($expectedDecision, $decision->decision);
+        static::assertEquals($reason, $decision->reason);
     }
 
     /**

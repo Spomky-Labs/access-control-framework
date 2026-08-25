@@ -10,10 +10,9 @@ use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
 use AccessControl\Attribute\AtLeastOneOf;
 use AccessControl\DecisionVote;
+use function assert;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final readonly class AtLeastOneOfHandler implements AccessPolicyHandlerInterface
@@ -25,18 +24,18 @@ final readonly class AtLeastOneOfHandler implements AccessPolicyHandlerInterface
 
     public function handle(AccessPolicyInterface $accessPolicy, AccessPolicyContext $context, AccessPolicyEvaluator $evaluator): AccessOutcome
     {
-        \assert($accessPolicy instanceof AtLeastOneOf);
+        assert($accessPolicy instanceof AtLeastOneOf);
 
         $denied = null;
 
         foreach ($accessPolicy->accessPolicies as $nested) {
             $outcome = $evaluator->evaluate($nested, $context);
 
-            if (DecisionVote::ACCESS_GRANTED === $outcome->decision) {
+            if ($outcome->decision === DecisionVote::ACCESS_GRANTED) {
                 return $outcome;
             }
 
-            $denied ??= DecisionVote::ACCESS_DENIED === $outcome->decision ? $outcome : null;
+            $denied ??= $outcome->decision === DecisionVote::ACCESS_DENIED ? $outcome : null;
         }
 
         return $denied ?? AccessOutcome::abstain('No nested access policy applied.');

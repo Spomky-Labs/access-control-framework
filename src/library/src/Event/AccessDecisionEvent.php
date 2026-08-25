@@ -9,8 +9,6 @@ use AccessControl\AccessRequest;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class AccessDecisionEvent extends Event

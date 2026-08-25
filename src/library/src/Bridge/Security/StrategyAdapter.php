@@ -10,6 +10,8 @@ use AccessControl\DecisionVote;
 use AccessControl\Strategy\StrategyInterface;
 use Symfony\Component\Security\Core\Authorization\Strategy\AccessDecisionStrategyInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface as SecurityVoterInterface;
+use function is_array;
+use function sprintf;
 
 /**
  * Lets a combining algorithm written against Security decide for this component.
@@ -20,8 +22,6 @@ use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface as Securi
  *
  * Whether all voters abstaining ends in a grant is settled inside the adapted strategy, which is
  * where Security settles it, so the manager never sees an abstention from here.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -40,7 +40,7 @@ final readonly class StrategyAdapter implements StrategyInterface
 
     public function evaluate(AccessRequest $accessRequest, iterable $votes): AccessDecision
     {
-        $votes = \is_array($votes) ? $votes : iterator_to_array($votes, false);
+        $votes = is_array($votes) ? $votes : iterator_to_array($votes, false);
 
         $granted = $this->strategy->decide((static function () use ($votes) {
             foreach ($votes as $vote) {
@@ -53,7 +53,7 @@ final readonly class StrategyAdapter implements StrategyInterface
         })());
 
         return $granted
-            ? AccessDecision::grant($accessRequest, $votes, \sprintf('"%s" granted access.', $this->strategy::class))
-            : AccessDecision::deny($accessRequest, $votes, \sprintf('"%s" denied access.', $this->strategy::class));
+            ? AccessDecision::grant($accessRequest, $votes, sprintf('"%s" granted access.', $this->strategy::class))
+            : AccessDecision::deny($accessRequest, $votes, sprintf('"%s" denied access.', $this->strategy::class));
     }
 }

@@ -16,11 +16,13 @@ final class EventsTest extends StrategyTestCase
     {
         $accessRequest = new AccessRequest(new NullToken(), 'PUBLIC_ACCESS');
 
-        $this->getAccessControlManager()->decide($accessRequest);
+        $this->getAccessControlManager()
+            ->decide($accessRequest);
 
-        $events = $this->getEventDispatcher()->events;
-        $this->assertCount(2, $events);
-        $this->assertInstanceOf(VoteEvent::class, $events[0]);
-        $this->assertInstanceOf(AccessDecisionEvent::class, $events[1]);
+        $events = $this->getEventDispatcher()
+            ->events;
+        static::assertCount(2, $events);
+        static::assertInstanceOf(VoteEvent::class, $events[0]);
+        static::assertInstanceOf(AccessDecisionEvent::class, $events[1]);
     }
 }

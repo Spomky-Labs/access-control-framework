@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessRequest;
 use AccessControl\Bridge\Security\VoterAdapter;
@@ -15,6 +14,8 @@ use AccessControl\Tests\Fixtures\FakeUser;
 use AccessControl\Tests\Fixtures\Post;
 use AccessControl\Tests\Fixtures\SecurityPostVoter;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
+use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface as SecurityVoterInterface;
@@ -37,7 +38,7 @@ final class VoterAdapterTest extends TestCase
         ] as $securityVerdict => $expected) {
             $adapter = new VoterAdapter($this->voter($securityVerdict));
 
-            $this->assertSame($expected, $adapter->vote(new AccessRequest($this->token(), 'EDIT'))->decision);
+            static::assertSame($expected, $adapter->vote(new AccessRequest($this->token(), 'EDIT'))->decision);
         }
     }
 
@@ -45,14 +46,14 @@ final class VoterAdapterTest extends TestCase
     {
         $adapter = new VoterAdapter($this->voter(SecurityVoterInterface::ACCESS_DENIED, ['Not the author.', 'Not an editor.']));
 
-        $this->assertSame('Not the author. Not an editor.', $adapter->vote(new AccessRequest($this->token(), 'EDIT'))->reason);
+        static::assertSame('Not the author. Not an editor.', $adapter->vote(new AccessRequest($this->token(), 'EDIT'))->reason);
     }
 
     public function testAnUnwrittenReasonStaysNull()
     {
         $adapter = new VoterAdapter($this->voter(SecurityVoterInterface::ACCESS_GRANTED));
 
-        $this->assertNull($adapter->vote(new AccessRequest($this->token(), 'EDIT'))->reason);
+        static::assertNull($adapter->vote(new AccessRequest($this->token(), 'EDIT'))->reason);
     }
 
     /**
@@ -65,18 +66,18 @@ final class VoterAdapterTest extends TestCase
 
         $outcome = $adapter->vote(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'EDIT'));
 
-        $this->assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
-        $this->assertStringContainsString('only votes on a security token', $outcome->reason);
+        static::assertSame(DecisionVote::ACCESS_ABSTAIN, $outcome->decision);
+        static::assertStringContainsString('only votes on a security token', (string) $outcome->reason);
     }
 
     public function testACacheableVoterKeepsItsFiltering()
     {
         $adapter = new VoterAdapter(new SecurityPostVoter());
 
-        $this->assertTrue($adapter->supportsAttribute('read'));
-        $this->assertFalse($adapter->supportsAttribute('deploy'));
-        $this->assertTrue($adapter->supportsSubject(new Post('Hello')));
-        $this->assertFalse($adapter->supportsSubject('a string'));
+        static::assertTrue($adapter->supportsAttribute('read'));
+        static::assertFalse($adapter->supportsAttribute('deploy'));
+        static::assertTrue($adapter->supportsSubject(new Post('Hello')));
+        static::assertFalse($adapter->supportsSubject('a string'));
     }
 
     /**
@@ -87,15 +88,15 @@ final class VoterAdapterTest extends TestCase
     {
         $adapter = new VoterAdapter(new SecurityPostVoter());
 
-        $this->assertTrue($adapter->supportsAttribute(new \stdClass()));
+        static::assertTrue($adapter->supportsAttribute(new stdClass()));
     }
 
     public function testAVoterWithoutTheCacheableContractIsNeverFilteredOut()
     {
         $adapter = new VoterAdapter($this->voter(SecurityVoterInterface::ACCESS_GRANTED));
 
-        $this->assertTrue($adapter->supportsAttribute('anything'));
-        $this->assertTrue($adapter->supportsSubject(new \stdClass()));
+        static::assertTrue($adapter->supportsAttribute('anything'));
+        static::assertTrue($adapter->supportsSubject(new stdClass()));
     }
 
     /**
@@ -109,8 +110,8 @@ final class VoterAdapterTest extends TestCase
         $granted = $manager->decide(new AccessRequest($this->token(), 'read', new Post('Hello')));
         $denied = $manager->decide(new AccessRequest($this->token(), 'read', 'not a post'));
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $granted->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $denied->decision);
     }
 
     private function token(): TokenInterface
@@ -123,7 +124,7 @@ final class VoterAdapterTest extends TestCase
      */
     private function voter(int $verdict, array $reasons = []): SecurityVoterInterface
     {
-        return new class($verdict, $reasons) implements SecurityVoterInterface {
+        return new readonly class($verdict, $reasons) implements SecurityVoterInterface {
             public function __construct(
                 private int $verdict,
                 private array $reasons,

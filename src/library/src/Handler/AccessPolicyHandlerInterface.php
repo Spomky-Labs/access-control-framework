@@ -10,8 +10,6 @@ use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 interface AccessPolicyHandlerInterface

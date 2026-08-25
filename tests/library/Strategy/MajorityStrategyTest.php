@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Strategy;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessDecision;
 use AccessControl\AccessOutcome;
@@ -12,6 +11,7 @@ use AccessControl\AccessRequest;
 use AccessControl\DecisionVote;
 use AccessControl\Strategy\MajorityStrategy;
 use AccessControl\Tests\Fixtures\FixedOutcomeVoter;
+use PHPUnit\Framework\TestCase;
 
 final class MajorityStrategyTest extends TestCase
 {
@@ -23,8 +23,8 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied by the third voter.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertSame('The grants weigh more than the denials. Granted by the first voter. Granted by the second voter.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame('The grants weigh more than the denials. Granted by the first voter. Granted by the second voter.', $decision->reason);
     }
 
     public function testAMajorityOfDenialsWins(): void
@@ -35,8 +35,8 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied by the third voter.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertSame('The denials weigh more than the grants. Denied by the second voter. Denied by the third voter.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame('The denials weigh more than the grants. Denied by the second voter. Denied by the third voter.', $decision->reason);
     }
 
     /**
@@ -49,8 +49,8 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
-        $this->assertSame('Both sides weigh the same, which is configured to grant access. Granted.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame('Both sides weigh the same, which is configured to grant access. Granted.', $decision->reason);
     }
 
     public function testATieCanBeDenied(): void
@@ -60,8 +60,8 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied.')),
         ], allowIfEqualGrantedDenied: false);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertSame('Both sides weigh the same, which is configured to deny access. Denied.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame('Both sides weigh the same, which is configured to deny access. Denied.', $decision->reason);
     }
 
     /**
@@ -75,8 +75,8 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::deny('Denied.')),
         ];
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->decide($voters, allowIfAllAbstain: false)->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $this->decide($voters, allowIfAllAbstain: true, allowIfEqualGrantedDenied: false)->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->decide($voters, allowIfAllAbstain: false)->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $this->decide($voters, allowIfAllAbstain: true, allowIfEqualGrantedDenied: false)->decision);
     }
 
     public function testWeightsAreTakenIntoAccount(): void
@@ -87,7 +87,7 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::grant('Granted.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
     }
 
     public function testAbstentionsAreNotCounted(): void
@@ -98,7 +98,7 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::abstain('Not my business either.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
     }
 
     public function testAllVotersAbstainingIsReportedAsSuch(): void
@@ -108,8 +108,8 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::abstain('Not my business either.')),
         ]);
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
-        $this->assertSame('All voters abstained from voting. Not my business. Not my business either.', $decision->reason);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame('All voters abstained from voting. Not my business. Not my business either.', $decision->reason);
     }
 
     public function testAllVotersAbstainingCanBeGranted(): void
@@ -118,7 +118,7 @@ final class MajorityStrategyTest extends TestCase
             new FixedOutcomeVoter(AccessOutcome::abstain('Not my business.')),
         ], allowIfAllAbstain: true);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $decision->decision);
     }
 
     /**

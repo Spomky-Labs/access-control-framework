@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Handler;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessPolicyContext;
@@ -21,6 +20,7 @@ use AccessControl\Test\AccessPolicyHandlerTestTrait;
 use AccessControl\Tests\Fixtures\FixedOutcomeVoter;
 use AccessControl\Tests\Fixtures\Post;
 use AccessControl\Tests\Fixtures\SubjectRecordingVoter;
+use PHPUnit\Framework\TestCase;
 
 /**
  * The leaf handler, the one that turns a policy into an access request. It recurses into nothing,
@@ -40,8 +40,8 @@ final class AccessPolicyHandlerTest extends TestCase
 
     public function testTheVerdictOfTheManagerIsHandedBack()
     {
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->evaluate(new AccessPolicy('EDIT'))->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $this->evaluate(new AccessPolicy('UNKNOWN'))->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->evaluate(new AccessPolicy('EDIT'))->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $this->evaluate(new AccessPolicy('UNKNOWN'))->decision);
     }
 
     /**
@@ -53,16 +53,20 @@ final class AccessPolicyHandlerTest extends TestCase
     {
         $post = new Post('Hello');
 
-        $this->evaluate(new AccessPolicy('EDIT', new Argument('post')), new AccessPolicyContext(arguments: ['post' => $post]));
+        $this->evaluate(new AccessPolicy('EDIT', new Argument('post')), new AccessPolicyContext(arguments: [
+            'post' => $post,
+        ]));
 
-        $this->assertSame([$post], $this->voter->subjects);
+        static::assertSame([$post], $this->voter->subjects);
     }
 
     public function testALiteralSubjectIsPassedAsIs()
     {
-        $this->evaluate(new AccessPolicy('EDIT', 'post'), new AccessPolicyContext(arguments: ['post' => new Post('Hello')]));
+        $this->evaluate(new AccessPolicy('EDIT', 'post'), new AccessPolicyContext(arguments: [
+            'post' => new Post('Hello'),
+        ]));
 
-        $this->assertSame(['post'], $this->voter->subjects);
+        static::assertSame(['post'], $this->voter->subjects);
     }
 
     /**
@@ -74,11 +78,19 @@ final class AccessPolicyHandlerTest extends TestCase
         $post = new Post('Hello');
 
         $this->evaluate(
-            new AccessPolicy('EDIT', ['post' => new Argument('post'), 'kind' => 'article']),
-            new AccessPolicyContext(arguments: ['post' => $post]),
+            new AccessPolicy('EDIT', [
+                'post' => new Argument('post'),
+                'kind' => 'article',
+            ]),
+            new AccessPolicyContext(arguments: [
+                'post' => $post,
+            ]),
         );
 
-        $this->assertSame([['post' => $post, 'kind' => 'article']], $this->voter->subjects);
+        static::assertSame([[
+            'post' => $post,
+            'kind' => 'article',
+        ]], $this->voter->subjects);
     }
 
     public function testAnArgumentNobodyHandedOverIsReported()
@@ -94,11 +106,19 @@ final class AccessPolicyHandlerTest extends TestCase
      */
     public function testTheTwoEnvironmentsAreMerged()
     {
-        $policy = new AccessPolicy('EDIT', environment: ['channel' => 'web', 'tenant' => 'acme']);
+        $policy = new AccessPolicy('EDIT', environment: [
+            'channel' => 'web',
+            'tenant' => 'acme',
+        ]);
 
-        $this->evaluate($policy, new AccessPolicyContext(environment: ['channel' => 'console']));
+        $this->evaluate($policy, new AccessPolicyContext(environment: [
+            'channel' => 'console',
+        ]));
 
-        $this->assertSame(['channel' => 'console', 'tenant' => 'acme'], $this->voter->environment[0]);
+        static::assertSame([
+            'channel' => 'console',
+            'tenant' => 'acme',
+        ], $this->voter->environment[0]);
     }
 
     /**
@@ -118,8 +138,8 @@ final class AccessPolicyHandlerTest extends TestCase
 
         $evaluator = new AccessPolicyEvaluator([new AccessPolicyHandler($manager)]);
 
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $evaluator->evaluate(new AccessPolicy('EDIT'), new AccessPolicyContext())->decision);
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $evaluator->evaluate(new AccessPolicy('EDIT', strategy: 'deny_overrides'), new AccessPolicyContext())->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $evaluator->evaluate(new AccessPolicy('EDIT'), new AccessPolicyContext())->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $evaluator->evaluate(new AccessPolicy('EDIT', strategy: 'deny_overrides'), new AccessPolicyContext())->decision);
     }
 
     protected function createHandler(): AccessPolicyHandlerInterface

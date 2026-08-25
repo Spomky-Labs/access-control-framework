@@ -7,6 +7,7 @@ namespace AccessControl\Tests\Fixtures;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
+use RuntimeException;
 
 /**
  * A voter whose source of truth is unreachable, the case XACML calls Indeterminate.
@@ -25,6 +26,6 @@ final class ThrowingVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        throw new \RuntimeException('The relationship store is unreachable.');
+        throw new RuntimeException('The relationship store is unreachable.');
     }
 }

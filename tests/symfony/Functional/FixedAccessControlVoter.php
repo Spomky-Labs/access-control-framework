@@ -22,7 +22,7 @@ class FixedAccessControlVoter implements VoterInterface
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return 'THING' === $attribute;
+        return $attribute === 'THING';
     }
 
     public function supportsSubject(mixed $subject): bool
@@ -32,7 +32,7 @@ class FixedAccessControlVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        if ('THING' !== $accessRequest->attribute) {
+        if ($accessRequest->attribute !== 'THING') {
             return AccessOutcome::abstain('Not the attribute this voter answers.');
         }
 

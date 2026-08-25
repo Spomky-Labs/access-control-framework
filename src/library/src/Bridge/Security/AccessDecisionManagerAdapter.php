@@ -16,6 +16,7 @@ use Symfony\Component\Security\Core\Authorization\AccessDecisionManagerInterface
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use function is_bool;
 
 /**
  * Answers Security's decision contract on top of an AccessControlManager.
@@ -28,8 +29,6 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
  *
  * The attributes of a call are combined by letting any grant win, which is what Security does
  * inside each of its voters: a rule naming several roles is satisfied by any one of them.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 final readonly class AccessDecisionManagerAdapter implements AccessDecisionManagerInterface
 {
@@ -37,7 +36,7 @@ final readonly class AccessDecisionManagerAdapter implements AccessDecisionManag
      * Everything Security asks arrives here, so the origin says no more than that. It is still worth
      * recording: without it, a rule naming several roles reads as several unrelated questions.
      */
-    private const ORIGIN = 'security.access.decision_manager';
+    private const string ORIGIN = 'security.access.decision_manager';
 
     public function __construct(
         private AccessControlManagerInterface $accessControlManager,
@@ -60,7 +59,7 @@ final readonly class AccessDecisionManagerAdapter implements AccessDecisionManag
      */
     public function decide(TokenInterface $token, array $attributes, mixed $object = null, bool|AccessDecision|null $accessDecision = null, bool $allowMultipleAttributes = false): bool
     {
-        if (\is_bool($accessDecision)) {
+        if (is_bool($accessDecision)) {
             $accessDecision = null;
         }
 
@@ -71,12 +70,12 @@ final readonly class AccessDecisionManagerAdapter implements AccessDecisionManag
             $decision = $this->accessControlManager->decide(new AccessRequest($token, $attribute, $object), $this->strategy);
             $votes = [...$votes, ...$this->translateVotes($decision)];
 
-            if (DecisionVote::ACCESS_GRANTED === $decision->decision) {
+            if ($decision->decision === DecisionVote::ACCESS_GRANTED) {
                 $granted = true;
             }
         }
 
-        if (null !== $accessDecision) {
+        if ($accessDecision !== null) {
             $accessDecision->isGranted = $granted;
             $accessDecision->votes = $votes;
             $accessDecision->strategy = $this->strategyName;
@@ -103,7 +102,7 @@ final readonly class AccessDecisionManagerAdapter implements AccessDecisionManag
                 DecisionVote::ACCESS_ABSTAIN => VoterInterface::ACCESS_ABSTAIN,
             };
 
-            if (null !== $cast->outcome->reason) {
+            if ($cast->outcome->reason !== null) {
                 $vote->addReason($cast->outcome->reason);
             }
 

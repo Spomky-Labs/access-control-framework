@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AccessControl\Bundle\DependencyInjection\Compiler;
 
-use AccessControl\Bundle\Twig\SecurityExtensionWithoutAuthorization;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\Argument;
 use AccessControl\Attribute\AtLeastOneOf;
 use AccessControl\Bridge\Security\RoleHierarchyAdapter;
 use AccessControl\Bridge\Security\StrategyAdapter;
 use AccessControl\Bridge\Security\VoterAdapter;
+use AccessControl\Bundle\Twig\SecurityExtensionWithoutAuthorization;
 use AccessControl\Http\AccessRule;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
@@ -24,6 +24,10 @@ use Symfony\Component\Security\Core\Authorization\Strategy\AffirmativeStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\ConsensusStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\PriorityStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\UnanimousStrategy;
+use function count;
+use function dirname;
+use function in_array;
+use function sprintf;
 
 /**
  * Hands the AccessControl voters what only Security has, then puts the component in charge.
@@ -33,8 +37,6 @@ use Symfony\Component\Security\Core\Authorization\Strategy\UnanimousStrategy;
  *
  * A compiler pass rather than the extension, as the definitions belong to another bundle.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 class SecurityBridgePass implements CompilerPassInterface
@@ -43,7 +45,7 @@ class SecurityBridgePass implements CompilerPassInterface
      * The voters Security ships, which the component replaces with native ones. Everything else
      * tagged security.voter belongs to the application and is bridged rather than dropped.
      */
-    private const SECURITY_OWN_VOTERS = [
+    private const array SECURITY_OWN_VOTERS = [
         'security.access.simple_role_voter',
         'security.access.role_hierarchy_voter',
         'security.access.authenticated_voter',
@@ -55,7 +57,7 @@ class SecurityBridgePass implements CompilerPassInterface
      * The four combining algorithms Symfony ships, under the names each stack gives them. The
      * component keeps the XACML names on purpose, so the correspondence has to live somewhere.
      */
-    private const STRATEGIES = [
+    private const array STRATEGIES = [
         AffirmativeStrategy::class => 'permit_overrides',
         UnanimousStrategy::class => 'deny_overrides',
         ConsensusStrategy::class => 'majority',
@@ -66,7 +68,7 @@ class SecurityBridgePass implements CompilerPassInterface
      * The name security.yaml gives each of them, which is the word the developer wrote and the one
      * the profiler owes them.
      */
-    private const SECURITY_STRATEGY_NAMES = [
+    private const array SECURITY_STRATEGY_NAMES = [
         'affirmative' => AffirmativeStrategy::class,
         'unanimous' => UnanimousStrategy::class,
         'consensus' => ConsensusStrategy::class,
@@ -77,7 +79,7 @@ class SecurityBridgePass implements CompilerPassInterface
      * The extension registers these on the strength of SecurityBundle being installed, which is not
      * the same as it being registered.
      */
-    private const BRIDGE_SERVICES = [
+    private const array BRIDGE_SERVICES = [
         'access_control.requester_provider.token_storage',
         'access_control.access_decision_manager',
         'access_control.authorization_checker',
@@ -107,7 +109,7 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container): void
     {
-        if (!$container->has('security.access.decision_manager')) {
+        if (! $container->has('security.access.decision_manager')) {
             $this->removeTheBridge($container);
 
             return;
@@ -127,7 +129,7 @@ class SecurityBridgePass implements CompilerPassInterface
 
         $this->bridgeApplicationVoters($container);
 
-        if (!$container->hasDefinition('security.access.decision_manager')) {
+        if (! $container->hasDefinition('security.access.decision_manager')) {
             $this->note($container, 'decisions', 'application');
             $this->note($container, 'is_granted', $container->hasDefinition('controller.is_granted_attribute_listener') ? 'security' : 'none');
             $this->note($container, 'twig', $container->hasDefinition('twig.extension.security') ? 'security' : 'none');
@@ -157,7 +159,7 @@ class SecurityBridgePass implements CompilerPassInterface
         }
 
         if ($container->hasAlias('access_control.requester_provider')
-            && 'access_control.requester_provider.token_storage' === (string) $container->getAlias('access_control.requester_provider')
+            && (string) $container->getAlias('access_control.requester_provider') === 'access_control.requester_provider.token_storage'
         ) {
             $container->setAlias('access_control.requester_provider', 'access_control.requester_provider.static');
         }
@@ -171,7 +173,7 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function takeOverTheTwigFunctions(ContainerBuilder $container): void
     {
-        if (!$container->hasDefinition('twig.extension.security') || !$container->hasDefinition('access_control.twig.extension')) {
+        if (! $container->hasDefinition('twig.extension.security') || ! $container->hasDefinition('access_control.twig.extension')) {
             return;
         }
 
@@ -226,7 +228,7 @@ class SecurityBridgePass implements CompilerPassInterface
     {
         $manager = $container->getDefinition('security.access.decision_manager');
 
-        if (!$container->hasParameter('access_control.default_strategy') || null === $strategy = $manager->getArguments()[1] ?? null) {
+        if (! $container->hasParameter('access_control.default_strategy') || null === $strategy = $manager->getArguments()[1] ?? null) {
             return;
         }
 
@@ -241,7 +243,7 @@ class SecurityBridgePass implements CompilerPassInterface
             return;
         }
 
-        if (!$strategy instanceof Definition || null === $name = self::STRATEGIES[$strategy->getClass()] ?? null) {
+        if (! $strategy instanceof Definition || null === $name = self::STRATEGIES[$strategy->getClass()] ?? null) {
             return;
         }
 
@@ -254,8 +256,9 @@ class SecurityBridgePass implements CompilerPassInterface
         $this->reportTheStrategyAs($container, $alias);
         $this->useAllAbstainRule($container, (bool) ($strategy->getArguments()[0] ?? false));
 
-        if (ConsensusStrategy::class === $strategy->getClass() && isset($strategy->getArguments()[1])) {
-            $container->getDefinition('access_control.strategy.majority')->setArgument(0, $strategy->getArguments()[1]);
+        if ($strategy->getClass() === ConsensusStrategy::class && isset($strategy->getArguments()[1])) {
+            $container->getDefinition('access_control.strategy.majority')
+                ->setArgument(0, $strategy->getArguments()[1]);
         }
 
         $this->useStrategy($container, $name, 'security.access_decision_manager.strategy');
@@ -279,7 +282,7 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function shareTheRules(ContainerBuilder $container): void
     {
-        if (!$this->securityHasRules($container)) {
+        if (! $this->securityHasRules($container)) {
             return;
         }
 
@@ -312,20 +315,21 @@ class SecurityBridgePass implements CompilerPassInterface
         $requiresChannel = false;
 
         foreach ($container->getDefinition('security.access_map')->getMethodCalls() as [$method, $arguments]) {
-            if ('add' !== $method) {
+            if ($method !== 'add') {
                 continue;
             }
 
             [$matcher, $attributes, $channel] = $arguments + [null, [], null];
             $rules[] = new Definition(AccessRule::class, [$matcher, self::policyOf($attributes), $channel]);
-            $requiresChannel = $requiresChannel || null !== $channel;
+            $requiresChannel = $requiresChannel || $channel !== null;
         }
 
-        (new PhpFileLoader($container, new FileLocator(\dirname(__DIR__, 2).'/Resources/config')))->load('rules.php');
+        new PhpFileLoader($container, new FileLocator(dirname(__DIR__, 2) . '/Resources/config'))->load('rules.php');
 
-        $container->getDefinition('access_control.rule_map')->replaceArgument(0, $rules);
+        $container->getDefinition('access_control.rule_map')
+            ->replaceArgument(0, $rules);
 
-        if (!$requiresChannel) {
+        if (! $requiresChannel) {
             $container->removeDefinition('access_control.listener.channel');
         }
 
@@ -344,7 +348,7 @@ class SecurityBridgePass implements CompilerPassInterface
             $policies[] = new Definition(AccessPolicy::class, [$attribute, new Definition(Argument::class, ['request'])]);
         }
 
-        return match (\count($policies)) {
+        return match (count($policies)) {
             0 => null,
             1 => $policies[0],
             default => new Definition(AtLeastOneOf::class, [$policies]),
@@ -361,12 +365,12 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function takeTheRulesOutOfTheFirewalls(ContainerBuilder $container): void
     {
-        if (!$container->hasParameter('security.firewalls')) {
+        if (! $container->hasParameter('security.firewalls')) {
             return;
         }
 
         foreach ($container->getParameter('security.firewalls') as $name) {
-            if (!$container->hasDefinition($id = 'security.firewall.map.context.'.$name)) {
+            if (! $container->hasDefinition($id = 'security.firewall.map.context.' . $name)) {
                 continue;
             }
 
@@ -375,19 +379,19 @@ class SecurityBridgePass implements CompilerPassInterface
 
             $context->replaceArgument(0, new IteratorArgument(array_values(array_filter(
                 $listeners instanceof IteratorArgument ? $listeners->getValues() : $listeners,
-                static fn ($listener) => !\in_array((string) $listener, ['security.access_listener', 'security.channel_listener'], true),
+                static fn ($listener) => ! in_array((string) $listener, ['security.access_listener', 'security.channel_listener'], true),
             ))));
         }
     }
 
     private function securityHasRules(ContainerBuilder $container): bool
     {
-        if (!$container->hasDefinition('security.access_map')) {
+        if (! $container->hasDefinition('security.access_map')) {
             return false;
         }
 
         foreach ($container->getDefinition('security.access_map')->getMethodCalls() as [$method]) {
-            if ('add' === $method) {
+            if ($method === 'add') {
                 return true;
             }
         }
@@ -402,7 +406,7 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function useAllAbstainRule(ContainerBuilder $container, bool $allowIfAllAbstain): void
     {
-        if (!$container->hasParameter('access_control.allow_if_all_abstain')) {
+        if (! $container->hasParameter('access_control.allow_if_all_abstain')) {
             return;
         }
 
@@ -423,8 +427,9 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function reportTheStrategyAs(ContainerBuilder $container, ?string $name): void
     {
-        if (null !== $name) {
-            $container->getDefinition('access_control.access_decision_manager')->replaceArgument(3, $name);
+        if ($name !== null) {
+            $container->getDefinition('access_control.access_decision_manager')
+                ->replaceArgument(3, $name);
         }
     }
 
@@ -438,7 +443,7 @@ class SecurityBridgePass implements CompilerPassInterface
             && $container->getParameter('.access_control.strategy_configured');
 
         if ($configured && $name !== $container->getParameter('access_control.default_strategy')) {
-            throw new InvalidArgumentException(\sprintf('The "%s" option and "access_control.default_strategy" name two different combining algorithms, "%s" and "%s". Declare it once.', $option, $name, $container->getParameter('access_control.default_strategy')));
+            throw new InvalidArgumentException(sprintf('The "%s" option and "access_control.default_strategy" name two different combining algorithms, "%s" and "%s". Declare it once.', $option, $name, $container->getParameter('access_control.default_strategy')));
         }
 
         $container->setParameter('access_control.default_strategy', $name);
@@ -458,7 +463,7 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function shareTheRoleHierarchy(ContainerBuilder $container): void
     {
-        if (!$container->has('security.role_hierarchy') || !$container->has('access_control.role_hierarchy')) {
+        if (! $container->has('security.role_hierarchy') || ! $container->has('access_control.role_hierarchy')) {
             return;
         }
 
@@ -484,11 +489,11 @@ class SecurityBridgePass implements CompilerPassInterface
         $bridged = 0;
 
         foreach ($container->findTaggedServiceIds('security.voter') as $id => $tags) {
-            if (\in_array($id, self::SECURITY_OWN_VOTERS, true)) {
+            if (in_array($id, self::SECURITY_OWN_VOTERS, true)) {
                 continue;
             }
 
-            $container->register('access_control.voter.bridge.'.$id, VoterAdapter::class)
+            $container->register('access_control.voter.bridge.' . $id, VoterAdapter::class)
                 ->setArguments([new Reference($id)])
                 ->addTag('access_control.voter', $tags[0] ?? []);
 
@@ -505,10 +510,12 @@ class SecurityBridgePass implements CompilerPassInterface
      */
     private function note(ContainerBuilder $container, string $key, mixed $value): void
     {
-        if (!$container->hasParameter('.access_control.integration')) {
+        if (! $container->hasParameter('.access_control.integration')) {
             return;
         }
 
-        $container->setParameter('.access_control.integration', [$key => $value] + $container->getParameter('.access_control.integration'));
+        $container->setParameter('.access_control.integration', [
+            $key => $value,
+        ] + $container->getParameter('.access_control.integration'));
     }
 }

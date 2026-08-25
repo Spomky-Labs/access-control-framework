@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Twig\Error\SyntaxError;
+use function sprintf;
 
 /**
  * The three bricks an application asks its questions through, under the three shapes a migration
@@ -22,7 +23,7 @@ use Twig\Error\SyntaxError;
  * visitor to its entry point where the component answers 403, a difference that is legitimate and
  * would hide everything else.
  */
-class MigrationParityTest extends WebTestCase
+final class MigrationParityTest extends WebTestCase
 {
     private static string $shape = MigrationParityKernel::SECURITY;
 
@@ -52,9 +53,9 @@ class MigrationParityTest extends WebTestCase
         $both = $this->statusOf(MigrationParityKernel::BOTH, $path, $user);
         $alone = $this->statusOf(MigrationParityKernel::ACCESS_CONTROL, $path, $user);
 
-        $this->assertSame($expected, $security, 'Security did not answer what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle changed the answer.');
-        $this->assertSame($security, $alone, 'The component alone does not answer like Security.');
+        static::assertSame($expected, $security, 'Security did not answer what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle changed the answer.');
+        static::assertSame($security, $alone, 'The component alone does not answer like Security.');
     }
 
     /**
@@ -69,9 +70,9 @@ class MigrationParityTest extends WebTestCase
         $both = $this->contentOf(MigrationParityKernel::BOTH, '/helper/is-granted', $user);
         $alone = $this->contentOf(MigrationParityKernel::ACCESS_CONTROL, '/helper/is-granted', $user);
 
-        $this->assertSame($expected, $security, 'Security did not answer what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle changed the answer.');
-        $this->assertSame($security, $alone, 'The component alone does not answer like Security.');
+        static::assertSame($expected, $security, 'Security did not answer what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle changed the answer.');
+        static::assertSame($security, $alone, 'The component alone does not answer like Security.');
     }
 
     /**
@@ -84,9 +85,9 @@ class MigrationParityTest extends WebTestCase
         $both = $this->contentOf(MigrationParityKernel::BOTH, '/template', $user);
         $alone = $this->contentOf(MigrationParityKernel::ACCESS_CONTROL, '/template', $user);
 
-        $this->assertSame($expected, $security, 'Security did not render what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle changed the rendering.');
-        $this->assertSame($security, $alone, 'The component alone does not render like Security.');
+        static::assertSame($expected, $security, 'Security did not render what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle changed the rendering.');
+        static::assertSame($security, $alone, 'The component alone does not render like Security.');
     }
 
     /**
@@ -117,11 +118,11 @@ class MigrationParityTest extends WebTestCase
      */
     public function testTheFunctionsThisComponentDoesNotAnswerAreSecuritysToKeep()
     {
-        $this->assertSame(200, $this->request(MigrationParityKernel::SECURITY, '/security-only', 'alice', false)->getResponse()->getStatusCode());
-        $this->assertSame(200, $this->request(MigrationParityKernel::BOTH, '/security-only', 'alice', false)->getResponse()->getStatusCode());
+        static::assertSame(200, $this->request(MigrationParityKernel::SECURITY, '/security-only', 'alice', false)->getResponse()->getStatusCode());
+        static::assertSame(200, $this->request(MigrationParityKernel::BOTH, '/security-only', 'alice', false)->getResponse()->getStatusCode());
 
         $this->expectException(SyntaxError::class);
-        $this->expectExceptionMessage('access_decision');
+        $this->expectExceptionMessageIsOrContains('access_decision');
 
         $this->request(MigrationParityKernel::ACCESS_CONTROL, '/security-only', 'alice', false);
     }
@@ -142,8 +143,8 @@ class MigrationParityTest extends WebTestCase
         $security = $this->contentOf(MigrationParityKernel::SECURITY, '/security-only', 'alice');
         $both = $this->contentOf(MigrationParityKernel::BOTH, '/security-only', 'alice');
 
-        $this->assertSame('granted|affirmative|1', $security, 'Security did not answer what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle emptied part of the decision.');
+        static::assertSame('granted|affirmative|1', $security, 'Security did not answer what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle emptied part of the decision.');
     }
 
     /**
@@ -163,11 +164,11 @@ class MigrationParityTest extends WebTestCase
         $both = $this->contentOf(MigrationParityKernel::BOTH, '/component-decision', 'alice');
         $alone = $this->contentOf(MigrationParityKernel::ACCESS_CONTROL, '/component-decision', 'alice');
 
-        $this->assertSame('denied|ACCESS_DENIED|voted', $both);
-        $this->assertSame($both, $alone, 'The component alone does not answer like the two bundles together.');
+        static::assertSame('denied|ACCESS_DENIED|voted', $both);
+        static::assertSame($both, $alone, 'The component alone does not answer like the two bundles together.');
 
-        $this->assertSame(500, $this->request(MigrationParityKernel::SECURITY, '/component-decision', 'alice')->getResponse()->getStatusCode());
-        $this->assertStringContainsString('access_control_decision', $security);
+        static::assertSame(500, $this->request(MigrationParityKernel::SECURITY, '/component-decision', 'alice')->getResponse()->getStatusCode());
+        static::assertStringContainsString('access_control_decision', $security);
     }
 
     /**
@@ -223,13 +224,15 @@ class MigrationParityTest extends WebTestCase
         }
 
         foreach ($expected as $key => $value) {
-            $this->assertSame($value, $integration[$key] ?? null, \sprintf('The panel says the wrong thing about "%s".', $key));
+            static::assertSame($value, $integration[$key] ?? null, sprintf('The panel says the wrong thing about "%s".', $key));
         }
     }
 
     private function statusOf(string $shape, string $path, string $user): int
     {
-        return $this->request($shape, $path, $user)->getResponse()->getStatusCode();
+        return $this->request($shape, $path, $user)
+            ->getResponse()
+            ->getStatusCode();
     }
 
     private function contentOf(string $shape, string $path, string $user): string
@@ -247,7 +250,7 @@ class MigrationParityTest extends WebTestCase
         $client->request('GET', $path, server: [
             'PHP_AUTH_USER' => $user,
             'PHP_AUTH_PW' => 'pa$$word',
-            'HTTP_X_ROLES' => 'alice' === $user ? 'ROLE_ADMIN' : 'ROLE_USER',
+            'HTTP_X_ROLES' => $user === 'alice' ? 'ROLE_ADMIN' : 'ROLE_USER',
         ]);
 
         return $client;

@@ -11,6 +11,7 @@ use AccessControl\Attribute\Argument;
 use AccessControl\DecisionVote;
 use AccessControl\Exception\AccessDeniedException;
 use AccessControl\Requester\RequesterProviderInterface;
+use Closure;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -18,6 +19,10 @@ use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use function in_array;
+use function is_array;
+use function is_object;
+use function is_string;
 
 /**
  * Honours Security's #[IsGranted] in an application that no longer has Security.
@@ -28,8 +33,6 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * the one thing an access control component cannot do.
  *
  * Registered only where Security's own listener is not, so a question is never asked twice.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -82,13 +85,13 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
     {
         $subject = $attribute->subject;
 
-        if (\is_array($subject)) {
+        if (is_array($subject)) {
             $named = [];
             foreach ($subject as $key => $reference) {
-                $named[\is_string($key) ? $key : (string) $reference] = $this->resolve($reference, $event);
+                $named[is_string($key) ? $key : (string) $reference] = $this->resolve($reference, $event);
             }
             $subject = $named;
-        } elseif (null !== $subject) {
+        } elseif ($subject !== null) {
             $subject = $this->resolve($subject, $event);
         }
 
@@ -97,7 +100,7 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
 
     private function resolve(mixed $reference, ControllerArgumentsEvent $event): mixed
     {
-        if ($reference instanceof \Closure || $reference instanceof Expression) {
+        if ($reference instanceof Closure || $reference instanceof Expression) {
             return $event->evaluate($reference, $this->expressionLanguage);
         }
 
@@ -110,17 +113,17 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
      */
     private function enforce(IsGranted $attribute, AccessPolicyContext $context, ControllerArgumentsEvent $event): void
     {
-        if ($attribute->methods && !\in_array($event->getRequest()->getMethod(), $attribute->methods, true)) {
+        if ($attribute->methods && ! in_array($event->getRequest()->getMethod(), $attribute->methods, true)) {
             return;
         }
 
-        if (DecisionVote::ACCESS_DENIED !== $this->accessPolicyEvaluator->evaluate($this->translate($attribute, $event), $context)->decision) {
+        if ($this->accessPolicyEvaluator->evaluate($this->translate($attribute, $event), $context)->decision !== DecisionVote::ACCESS_DENIED) {
             return;
         }
 
         $message = $attribute->message ?: 'Access Denied.';
 
-        if (null !== $attribute->statusCode) {
+        if ($attribute->statusCode !== null) {
             throw new HttpException($attribute->statusCode, $message, code: $attribute->exceptionCode ?? 0);
         }
 
@@ -130,9 +133,9 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
     private static function originOf(mixed $controller): string
     {
         return match (true) {
-            \is_string($controller) => $controller,
-            \is_array($controller) => (\is_object($controller[0]) ? $controller[0]::class : $controller[0]).'::'.$controller[1],
-            default => get_debug_type($controller).'::__invoke',
+            is_string($controller) => $controller,
+            is_array($controller) => (is_object($controller[0]) ? $controller[0]::class : $controller[0]) . '::' . $controller[1],
+            default => get_debug_type($controller) . '::__invoke',
         };
     }
 }

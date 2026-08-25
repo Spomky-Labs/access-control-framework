@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\DataCollector;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\AccessEnvironment;
 use AccessControl\AccessPolicyContext;
@@ -28,6 +27,8 @@ use AccessControl\Tests\Fixtures\SecurityPostVoter;
 use AccessControl\Tests\Fixtures\StandaloneRequester;
 use AccessControl\Voter\ClosureVoter;
 use AccessControl\Voter\RBAC\RoleVoter;
+use ArrayObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,6 +36,7 @@ use Symfony\Component\HttpFoundation\Response;
 final class AccessControlDataCollectorTest extends TestCase
 {
     private EventDispatcher $dispatcher;
+
     private AccessDecisionLoggerListener $logger;
 
     protected function setUp(): void
@@ -48,26 +50,27 @@ final class AccessControlDataCollectorTest extends TestCase
     {
         $collector = $this->collect([new RoleVoter()]);
 
-        $this->assertCount(0, $collector->getQueries());
-        $this->assertSame(0, $collector->getDecisionCount());
-        $this->assertSame(0, $collector->getGrantedCount());
-        $this->assertSame(0, $collector->getDeniedCount());
-        $this->assertSame('permit_overrides', $collector->getDefaultStrategy());
-        $this->assertSame([RoleVoter::class], $this->voterClasses($collector));
+        static::assertCount(0, $collector->getQueries());
+        static::assertSame(0, $collector->getDecisionCount());
+        static::assertSame(0, $collector->getGrantedCount());
+        static::assertSame(0, $collector->getDeniedCount());
+        static::assertSame('permit_overrides', $collector->getDefaultStrategy());
+        static::assertSame([RoleVoter::class], $this->voterClasses($collector));
     }
 
     public function testAGrantedDecisionKeepsTheQuestionItAnswered()
     {
         $voters = [new PostVoter()];
-        $this->manager($voters)->decide(new AccessRequest(new StandaloneRequester(), 'read', new Post()));
+        $this->manager($voters)
+            ->decide(new AccessRequest(new StandaloneRequester(), 'read', new Post()));
 
         $decision = $this->decisions($this->collect($voters))[0];
 
-        $this->assertSame('ACCESS_GRANTED', $decision['decision']);
-        $this->assertSame('read', $decision['attribute']);
-        $this->assertSame('Hello', $decision['subject']['title']);
-        $this->assertSame('permit_overrides', $decision['strategy']);
-        $this->assertSame(0, $decision['depth']);
+        static::assertSame('ACCESS_GRANTED', $decision['decision']);
+        static::assertSame('read', $decision['attribute']);
+        static::assertSame('Hello', $decision['subject']['title']);
+        static::assertSame('permit_overrides', $decision['strategy']);
+        static::assertSame(0, $decision['depth']);
     }
 
     public function testTheCountsSeparateGrantsFromDenials()
@@ -79,9 +82,9 @@ final class AccessControlDataCollectorTest extends TestCase
 
         $collector = $this->collect($voters);
 
-        $this->assertSame(2, $collector->getDecisionCount());
-        $this->assertSame(1, $collector->getGrantedCount());
-        $this->assertSame(1, $collector->getDeniedCount());
+        static::assertSame(2, $collector->getDecisionCount());
+        static::assertSame(1, $collector->getGrantedCount());
+        static::assertSame(1, $collector->getDeniedCount());
     }
 
     /**
@@ -90,14 +93,15 @@ final class AccessControlDataCollectorTest extends TestCase
     public function testADenialNamesTheVoterThatCastIt()
     {
         $voters = [new RoleVoter()];
-        $this->manager($voters)->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_SUPER_ADMIN'));
+        $this->manager($voters)
+            ->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_SUPER_ADMIN'));
 
         $votes = $this->decisions($this->collect($voters))[0]['votes'];
 
-        $this->assertCount(1, $votes);
-        $this->assertSame(RoleVoter::class, (string) $votes[0]['voter']);
-        $this->assertSame('ACCESS_DENIED', $votes[0]['decision']);
-        $this->assertSame('The user does not have the required role.', $votes[0]['reason']);
+        static::assertCount(1, $votes);
+        static::assertSame(RoleVoter::class, (string) $votes[0]['voter']);
+        static::assertSame('ACCESS_DENIED', $votes[0]['decision']);
+        static::assertSame('The user does not have the required role.', $votes[0]['reason']);
     }
 
     /**
@@ -109,15 +113,17 @@ final class AccessControlDataCollectorTest extends TestCase
         $voters = [new RoleVoter()];
         $policy = new AtLeastOneOf([new AccessPolicy('ROLE_SUPER_ADMIN'), new AccessPolicy('ROLE_ADMIN')]);
 
-        $this->evaluator($voters)->evaluate($policy, new AccessPolicyContext(new StandaloneRequester(['ROLE_ADMIN'])));
+        $this->evaluator($voters)
+            ->evaluate($policy, new AccessPolicyContext(new StandaloneRequester(['ROLE_ADMIN'])));
 
-        $queries = $this->collect($voters)->getQueries();
+        $queries = $this->collect($voters)
+            ->getQueries();
 
-        $this->assertCount(1, $queries);
-        $this->assertSame('ACCESS_GRANTED', $queries[0]['decision']);
-        $this->assertCount(2, $queries[0]['decisions']);
-        $this->assertSame('ROLE_SUPER_ADMIN', $queries[0]['decisions'][0]['attribute']);
-        $this->assertSame('ROLE_ADMIN', $queries[0]['decisions'][1]['attribute']);
+        static::assertCount(1, $queries);
+        static::assertSame('ACCESS_GRANTED', $queries[0]['decision']);
+        static::assertCount(2, $queries[0]['decisions']);
+        static::assertSame('ROLE_SUPER_ADMIN', $queries[0]['decisions'][0]['attribute']);
+        static::assertSame('ROLE_ADMIN', $queries[0]['decisions'][1]['attribute']);
     }
 
     public function testTwoPoliciesAreTwoQuestions()
@@ -129,11 +135,12 @@ final class AccessControlDataCollectorTest extends TestCase
         $evaluator->evaluate(new AccessPolicy('ROLE_ADMIN'), $context);
         $evaluator->evaluate(new AccessPolicy('ROLE_SUPER_ADMIN'), $context);
 
-        $queries = $this->collect($voters)->getQueries();
+        $queries = $this->collect($voters)
+            ->getQueries();
 
-        $this->assertCount(2, $queries);
-        $this->assertSame('ACCESS_GRANTED', $queries[0]['decision']);
-        $this->assertSame('ACCESS_DENIED', $queries[1]['decision']);
+        static::assertCount(2, $queries);
+        static::assertSame('ACCESS_GRANTED', $queries[0]['decision']);
+        static::assertSame('ACCESS_DENIED', $queries[1]['decision']);
     }
 
     public function testTheOriginOfTheContextNamesTheQuestion()
@@ -141,9 +148,10 @@ final class AccessControlDataCollectorTest extends TestCase
         $voters = [new RoleVoter()];
         $context = new AccessPolicyContext(new StandaloneRequester(['ROLE_ADMIN']), origin: 'App\Controller\PostController::edit');
 
-        $this->evaluator($voters)->evaluate(new All([new AccessPolicy('ROLE_ADMIN')]), $context);
+        $this->evaluator($voters)
+            ->evaluate(new All([new AccessPolicy('ROLE_ADMIN')]), $context);
 
-        $this->assertSame('App\Controller\PostController::edit', $this->collect($voters)->getQueries()[0]['origin']);
+        static::assertSame('App\Controller\PostController::edit', $this->collect($voters)->getQueries()[0]['origin']);
     }
 
     /**
@@ -157,13 +165,14 @@ final class AccessControlDataCollectorTest extends TestCase
         $manager->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
         $manager->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_SUPER_ADMIN'));
 
-        $queries = $this->collect($voters)->getQueries();
+        $queries = $this->collect($voters)
+            ->getQueries();
 
-        $this->assertCount(2, $queries);
-        $this->assertSame('ACCESS_GRANTED', $queries[0]['decision']);
-        $this->assertSame('ACCESS_DENIED', $queries[1]['decision']);
-        $this->assertCount(1, $queries[0]['decisions']);
-        $this->assertCount(1, $queries[1]['decisions']);
+        static::assertCount(2, $queries);
+        static::assertSame('ACCESS_GRANTED', $queries[0]['decision']);
+        static::assertSame('ACCESS_DENIED', $queries[1]['decision']);
+        static::assertCount(1, $queries[0]['decisions']);
+        static::assertCount(1, $queries[1]['decisions']);
     }
 
     /**
@@ -175,21 +184,24 @@ final class AccessControlDataCollectorTest extends TestCase
         $this->dispatcher->addSubscriber($this->logger);
 
         $voters = [new RoleVoter()];
-        $this->manager($voters)->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
+        $this->manager($voters)
+            ->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
 
-        $query = $this->collect($voters)->getQueries()[0];
+        $query = $this->collect($voters)
+            ->getQueries()[0];
 
-        $this->assertSame(self::class.'::testTheCallSiteNamesAQuestionNobodyDeclared', $query['origin']);
-        $this->assertSame(__FILE__, $query['caller']['file']);
-        $this->assertIsInt($query['caller']['line']);
+        static::assertSame(self::class . '::testTheCallSiteNamesAQuestionNobodyDeclared', $query['origin']);
+        static::assertSame(__FILE__, $query['caller']['file']);
+        static::assertIsInt($query['caller']['line']);
     }
 
     public function testTheCallSiteIsNotWalkedUnlessAsked()
     {
         $voters = [new RoleVoter()];
-        $this->manager($voters)->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
+        $this->manager($voters)
+            ->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
 
-        $this->assertNull($this->collect($voters)->getQueries()[0]['origin']);
+        static::assertNull($this->collect($voters)->getQueries()[0]['origin']);
     }
 
     /**
@@ -201,10 +213,10 @@ final class AccessControlDataCollectorTest extends TestCase
     {
         $decisions = $this->decisions($this->collect($this->nestingVoters()));
 
-        $this->assertCount(2, $decisions);
-        $this->assertSame('ROLE_ADMIN', $decisions[1]['attribute']);
-        $this->assertSame([ClosureVoter::class], $this->votersOf($decisions[0]));
-        $this->assertSame([RoleVoter::class], $this->votersOf($decisions[1]));
+        static::assertCount(2, $decisions);
+        static::assertSame('ROLE_ADMIN', $decisions[1]['attribute']);
+        static::assertSame([ClosureVoter::class], $this->votersOf($decisions[0]));
+        static::assertSame([RoleVoter::class], $this->votersOf($decisions[1]));
     }
 
     /**
@@ -215,54 +227,59 @@ final class AccessControlDataCollectorTest extends TestCase
     {
         $decisions = $this->decisions($this->collect($this->nestingVoters()));
 
-        $this->assertSame(0, $decisions[0]['depth']);
-        $this->assertSame(1, $decisions[1]['depth']);
+        static::assertSame(0, $decisions[0]['depth']);
+        static::assertSame(1, $decisions[1]['depth']);
     }
 
     public function testAPolicyThatPicksItsOwnStrategyIsShownWithIt()
     {
         $voters = [new RoleVoter()];
-        $this->manager($voters)->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'), 'deny_overrides');
+        $this->manager($voters)
+            ->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'), 'deny_overrides');
 
         $collector = $this->collect($voters);
 
-        $this->assertSame('deny_overrides', $this->decisions($collector)[0]['strategy']);
-        $this->assertSame('permit_overrides', $collector->getDefaultStrategy());
+        static::assertSame('deny_overrides', $this->decisions($collector)[0]['strategy']);
+        static::assertSame('permit_overrides', $collector->getDefaultStrategy());
     }
 
     public function testTheEnvironmentIsCollected()
     {
         $voters = [new RoleVoter()];
-        $this->manager($voters)->decide(new AccessRequest(
-            new StandaloneRequester(['ROLE_ADMIN']),
-            'ROLE_ADMIN',
-            environment: new AccessEnvironment(['ip' => '10.0.0.1']),
-        ));
+        $this->manager($voters)
+            ->decide(new AccessRequest(
+                new StandaloneRequester(['ROLE_ADMIN']),
+                'ROLE_ADMIN',
+                environment: new AccessEnvironment([
+                    'ip' => '10.0.0.1',
+                ]),
+            ));
 
-        $this->assertSame('10.0.0.1', $this->decisions($this->collect($voters))[0]['environment']['ip']);
+        static::assertSame('10.0.0.1', $this->decisions($this->collect($voters))[0]['environment']['ip']);
     }
 
     public function testResetEmptiesTheCollectedData()
     {
         $voters = [new RoleVoter()];
-        $this->manager($voters)->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
+        $this->manager($voters)
+            ->decide(new AccessRequest(new StandaloneRequester(['ROLE_ADMIN']), 'ROLE_ADMIN'));
 
         $collector = $this->collect($voters);
         $collector->reset();
 
-        $this->assertCount(0, $collector->getQueries());
-        $this->assertSame([], $collector->getVoters());
-        $this->assertSame(0, $collector->getDecisionCount());
-        $this->assertNull($collector->getDefaultStrategy());
+        static::assertCount(0, $collector->getQueries());
+        static::assertSame([], $collector->getVoters());
+        static::assertSame(0, $collector->getDecisionCount());
+        static::assertNull($collector->getDefaultStrategy());
     }
 
     /**
      * A closure voter reaching for the checker, which is the shape an expression calling
      * is_granted() takes.
      */
-    private function nestingVoters(): \ArrayObject
+    private function nestingVoters(): ArrayObject
     {
-        $voters = new \ArrayObject();
+        $voters = new ArrayObject();
         $manager = $this->manager($voters);
         $voters->append(new ClosureVoter($manager));
         $voters->append(new RoleVoter());
@@ -308,8 +325,8 @@ final class AccessControlDataCollectorTest extends TestCase
 
         $voters = iterator_to_array($collector->getVoters());
 
-        $this->assertSame(VoterAdapter::class, (string) $voters[0]['voter']);
-        $this->assertSame(SecurityPostVoter::class, (string) $voters[0]['bridged']);
+        static::assertSame(VoterAdapter::class, (string) $voters[0]['voter']);
+        static::assertSame(SecurityPostVoter::class, (string) $voters[0]['bridged']);
     }
 
     /**
@@ -322,8 +339,8 @@ final class AccessControlDataCollectorTest extends TestCase
 
         $voters = iterator_to_array($collector->getVoters());
 
-        $this->assertSame(RoleVoter::class, (string) $voters[0]['voter']);
-        $this->assertNull($voters[0]->seek('bridged'));
+        static::assertSame(RoleVoter::class, (string) $voters[0]['voter']);
+        static::assertNull($voters[0]->seek('bridged'));
     }
 
     /**

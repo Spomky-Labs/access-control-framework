@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AccessControl\Exception;
 
+use RuntimeException;
+
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
-final class UnknownArgumentException extends \RuntimeException
+final class UnknownArgumentException extends RuntimeException
 {
 }

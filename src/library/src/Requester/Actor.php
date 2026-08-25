@@ -17,8 +17,6 @@ use Symfony\Component\Security\Core\Authentication\Token\SwitchUserToken;
  * The reference to Security is soft, as everywhere else here: the instanceof answers false rather
  * than raising when security-core is absent, so the component stands alone without a guard.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class Actor
@@ -41,6 +39,6 @@ final class Actor
 
     public static function isActedFor(mixed $requester): bool
     {
-        return null !== self::of($requester);
+        return self::of($requester) !== null;
     }
 }

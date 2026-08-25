@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Fixtures\Model;
 
+use Stringable;
+use function sprintf;
+
 /**
  * A point of the security lattice: a hierarchical level plus a set of compartments.
  *
  * Two labels may be incomparable, neither dominating the other.
  */
-final readonly class SecurityLabel
+final readonly class SecurityLabel implements Stringable
 {
     /**
      * @param list<string> $compartments
@@ -22,11 +25,11 @@ final readonly class SecurityLabel
 
     public function dominates(self $other): bool
     {
-        return $this->level >= $other->level && [] === array_diff($other->compartments, $this->compartments);
+        return $this->level >= $other->level && array_diff($other->compartments, $this->compartments) === [];
     }
 
     public function __toString(): string
     {
-        return $this->compartments ? \sprintf('%d{%s}', $this->level, implode(',', $this->compartments)) : (string) $this->level;
+        return $this->compartments ? sprintf('%d{%s}', $this->level, implode(',', $this->compartments)) : (string) $this->level;
     }
 }

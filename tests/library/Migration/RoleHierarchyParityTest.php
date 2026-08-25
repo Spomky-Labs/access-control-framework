@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessRequest;
 use AccessControl\Bridge\Security\RoleHierarchyAdapter;
 use AccessControl\Test\AccessOutcomeAssertionsTrait;
@@ -13,6 +11,8 @@ use AccessControl\Tests\Fixtures\FakeUser;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleHierarchyInterface;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Role\RoleHierarchy as SecurityRoleHierarchy;
 
 /**
@@ -31,7 +31,7 @@ final class RoleHierarchyParityTest extends TestCase
      * The hierarchy of Security's own test for this method, so the comparison is against what it
      * pins rather than against a case chosen to agree.
      */
-    private const ENCOMPASSING = [
+    private const array ENCOMPASSING = [
         'ROLE_ADMIN' => ['ROLE_USER'],
         'ROLE_SUPER_ADMIN' => ['ROLE_ADMIN', 'ROLE_FOO'],
         'ROLE_USER' => ['ROLE_BAR'],
@@ -40,19 +40,45 @@ final class RoleHierarchyParityTest extends TestCase
     public static function provideHierarchies(): iterable
     {
         yield 'flat' => [[], ['ROLE_USER']];
-        yield 'one level' => [['ROLE_ADMIN' => ['ROLE_USER']], ['ROLE_ADMIN']];
-        yield 'transitive' => [['ROLE_SUPER_ADMIN' => ['ROLE_ADMIN'], 'ROLE_ADMIN' => ['ROLE_USER']], ['ROLE_SUPER_ADMIN']];
-        yield 'several held roles' => [['ROLE_ADMIN' => ['ROLE_USER']], ['ROLE_ADMIN', 'ROLE_EDITOR']];
-        yield 'a role that reaches two' => [['ROLE_ADMIN' => ['ROLE_USER', 'ROLE_EDITOR']], ['ROLE_ADMIN']];
+        yield 'one level' => [[
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ], ['ROLE_ADMIN']];
+        yield 'transitive' => [[
+            'ROLE_SUPER_ADMIN' => ['ROLE_ADMIN'],
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ], ['ROLE_SUPER_ADMIN']];
+        yield 'several held roles' => [[
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ], ['ROLE_ADMIN', 'ROLE_EDITOR']];
+        yield 'a role that reaches two' => [[
+            'ROLE_ADMIN' => ['ROLE_USER', 'ROLE_EDITOR'],
+        ], ['ROLE_ADMIN']];
         yield 'a diamond' => [
-            ['ROLE_A' => ['ROLE_B', 'ROLE_C'], 'ROLE_B' => ['ROLE_D'], 'ROLE_C' => ['ROLE_D']],
+            [
+                'ROLE_A' => ['ROLE_B', 'ROLE_C'],
+                'ROLE_B' => ['ROLE_D'],
+                'ROLE_C' => ['ROLE_D'],
+            ],
             ['ROLE_A'],
         ];
-        yield 'an unknown role' => [['ROLE_ADMIN' => ['ROLE_USER']], ['ROLE_NOBODY']];
-        yield 'a role naming itself' => [['ROLE_ADMIN' => ['ROLE_ADMIN', 'ROLE_USER']], ['ROLE_ADMIN']];
-        yield 'a cycle of two' => [['ROLE_A' => ['ROLE_B'], 'ROLE_B' => ['ROLE_A']], ['ROLE_A']];
-        yield 'a cycle of three' => [['ROLE_A' => ['ROLE_B'], 'ROLE_B' => ['ROLE_C'], 'ROLE_C' => ['ROLE_A']], ['ROLE_A']];
-        yield 'nothing held' => [['ROLE_ADMIN' => ['ROLE_USER']], []];
+        yield 'an unknown role' => [[
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ], ['ROLE_NOBODY']];
+        yield 'a role naming itself' => [[
+            'ROLE_ADMIN' => ['ROLE_ADMIN', 'ROLE_USER'],
+        ], ['ROLE_ADMIN']];
+        yield 'a cycle of two' => [[
+            'ROLE_A' => ['ROLE_B'],
+            'ROLE_B' => ['ROLE_A'],
+        ], ['ROLE_A']];
+        yield 'a cycle of three' => [[
+            'ROLE_A' => ['ROLE_B'],
+            'ROLE_B' => ['ROLE_C'],
+            'ROLE_C' => ['ROLE_A'],
+        ], ['ROLE_A']];
+        yield 'nothing held' => [[
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ], []];
     }
 
     /**
@@ -62,13 +88,15 @@ final class RoleHierarchyParityTest extends TestCase
     #[DataProvider('provideHierarchies')]
     public function testBothHierarchiesReachTheSameRoles(array $hierarchy, array $roles)
     {
-        $security = (new SecurityRoleHierarchy($hierarchy))->getReachableRoleNames($roles);
-        $accessControl = (new RoleHierarchy($hierarchy))->getReachableRoleNames($roles);
+        $security = new SecurityRoleHierarchy($hierarchy)
+            ->getReachableRoleNames($roles);
+        $accessControl = new RoleHierarchy($hierarchy)
+            ->getReachableRoleNames($roles);
 
         sort($security);
         sort($accessControl);
 
-        $this->assertSame($security, $accessControl);
+        static::assertSame($security, $accessControl);
     }
 
     /**
@@ -77,16 +105,19 @@ final class RoleHierarchyParityTest extends TestCase
      */
     public function testACycleTerminates()
     {
-        $hierarchy = new RoleHierarchy(['ROLE_A' => ['ROLE_B'], 'ROLE_B' => ['ROLE_A']]);
+        $hierarchy = new RoleHierarchy([
+            'ROLE_A' => ['ROLE_B'],
+            'ROLE_B' => ['ROLE_A'],
+        ]);
 
-        $this->assertSame(['ROLE_A', 'ROLE_B'], $hierarchy->getReachableRoleNames(['ROLE_A']));
+        static::assertSame(['ROLE_A', 'ROLE_B'], $hierarchy->getReachableRoleNames(['ROLE_A']));
     }
 
     public function testAHeldRoleIsAlwaysReachable()
     {
         $hierarchy = new RoleHierarchy([]);
 
-        $this->assertSame(['ROLE_USER'], $hierarchy->getReachableRoleNames(['ROLE_USER']));
+        static::assertSame(['ROLE_USER'], $hierarchy->getReachableRoleNames(['ROLE_USER']));
     }
 
     /**
@@ -115,13 +146,13 @@ final class RoleHierarchyParityTest extends TestCase
     #[DataProvider('provideHeldRoles')]
     public function testBothHierarchiesEncompassTheSameRoles(array $roles)
     {
-        $security = (new SecurityRoleHierarchy(self::ENCOMPASSING))->getParentRoleNames($roles);
-        $accessControl = (new RoleHierarchy(self::ENCOMPASSING))->getParentRoleNames($roles);
+        $security = new SecurityRoleHierarchy(self::ENCOMPASSING)->getParentRoleNames($roles);
+        $accessControl = new RoleHierarchy(self::ENCOMPASSING)->getParentRoleNames($roles);
 
         sort($security);
         sort($accessControl);
 
-        $this->assertSame($security, $accessControl);
+        static::assertSame($security, $accessControl);
     }
 
     /**
@@ -129,15 +160,20 @@ final class RoleHierarchyParityTest extends TestCase
      */
     public function testTheInverseLookupTerminatesOnACycle()
     {
-        $hierarchy = ['ROLE_A' => ['ROLE_B'], 'ROLE_B' => ['ROLE_A']];
+        $hierarchy = [
+            'ROLE_A' => ['ROLE_B'],
+            'ROLE_B' => ['ROLE_A'],
+        ];
 
-        $security = (new SecurityRoleHierarchy($hierarchy))->getParentRoleNames(['ROLE_A']);
-        $accessControl = (new RoleHierarchy($hierarchy))->getParentRoleNames(['ROLE_A']);
+        $security = new SecurityRoleHierarchy($hierarchy)
+            ->getParentRoleNames(['ROLE_A']);
+        $accessControl = new RoleHierarchy($hierarchy)
+            ->getParentRoleNames(['ROLE_A']);
 
         sort($security);
         sort($accessControl);
 
-        $this->assertSame($security, $accessControl);
+        static::assertSame($security, $accessControl);
     }
 
     /**
@@ -148,15 +184,18 @@ final class RoleHierarchyParityTest extends TestCase
      */
     public function testSecuritysHierarchyIsReachedThroughTheAdapter()
     {
-        $hierarchy = new SecurityRoleHierarchy(['ROLE_ADMIN' => ['ROLE_USER']]);
+        $hierarchy = new SecurityRoleHierarchy([
+            'ROLE_ADMIN' => ['ROLE_USER'],
+        ]);
 
-        $this->assertNotInstanceOf(RoleHierarchyInterface::class, $hierarchy, 'Security is left untouched.');
+        static::assertNotInstanceOf(RoleHierarchyInterface::class, $hierarchy, 'Security is left untouched.');
 
         $adapter = new RoleHierarchyAdapter($hierarchy);
 
-        $this->assertSame($hierarchy->getReachableRoleNames(['ROLE_ADMIN']), $adapter->getReachableRoleNames(['ROLE_ADMIN']));
+        static::assertSame($hierarchy->getReachableRoleNames(['ROLE_ADMIN']), $adapter->getReachableRoleNames(['ROLE_ADMIN']));
         $this->assertAccessGranted(
-            (new RoleVoter($adapter))->vote(new AccessRequest(new FakeUser('alice', ['ROLE_ADMIN']), 'ROLE_USER')),
+            new RoleVoter($adapter)
+                ->vote(new AccessRequest(new FakeUser('alice', ['ROLE_ADMIN']), 'ROLE_USER')),
         );
     }
 }

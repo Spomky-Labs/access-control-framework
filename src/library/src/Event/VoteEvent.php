@@ -10,8 +10,6 @@ use AccessControl\VoterInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class VoteEvent extends Event

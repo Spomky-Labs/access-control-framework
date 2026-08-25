@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Migration;
 
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\Bridge\Security\StrategyAdapter;
 use AccessControl\CastVote;
 use AccessControl\DecisionVote;
 use AccessControl\Tests\Fixtures\FixedOutcomeVoter;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authorization\AccessDecision as SecurityAccessDecision;
 use Symfony\Component\Security\Core\Authorization\Strategy\AccessDecisionStrategyInterface;
 use Symfony\Component\Security\Core\Authorization\Strategy\AffirmativeStrategy;
@@ -19,6 +19,7 @@ use Symfony\Component\Security\Core\Authorization\Strategy\ConsensusStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\PriorityStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\UnanimousStrategy;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface as SecurityVoterInterface;
+use Traversable;
 
 /**
  * An application may have named a combining algorithm of its own, which the bridge wraps rather
@@ -45,24 +46,26 @@ final class StrategyAdapterTest extends TestCase
     #[DataProvider('provideStrategies')]
     public function testTheFourAlgorithmsOfSecurityAnswerThroughTheAdapter(AccessDecisionStrategyInterface $strategy, bool $granted)
     {
-        $decision = (new StrategyAdapter($strategy))->evaluate(new AccessRequest(null, 'THING'), [
-            self::cast(AccessOutcome::deny('no')),
-            self::cast(AccessOutcome::deny('no')),
-            self::cast(AccessOutcome::grant('yes')),
-        ]);
+        $decision = new StrategyAdapter($strategy)
+            ->evaluate(new AccessRequest(null, 'THING'), [
+                self::cast(AccessOutcome::deny('no')),
+                self::cast(AccessOutcome::deny('no')),
+                self::cast(AccessOutcome::grant('yes')),
+            ]);
 
-        $this->assertSame($granted ? DecisionVote::ACCESS_GRANTED : DecisionVote::ACCESS_DENIED, $decision->decision);
+        static::assertSame($granted ? DecisionVote::ACCESS_GRANTED : DecisionVote::ACCESS_DENIED, $decision->decision);
     }
 
     public function testAnAbstentionIsSaidInSecurityTerms()
     {
         $seen = [];
         $strategy = new class($seen) implements AccessDecisionStrategyInterface {
-            public function __construct(private array &$seen)
-            {
+            public function __construct(
+                private array &$seen
+            ) {
             }
 
-            public function decide(\Traversable $results, ?SecurityAccessDecision $accessDecision = null): bool
+            public function decide(Traversable $results, ?SecurityAccessDecision $accessDecision = null): bool
             {
                 $this->seen = iterator_to_array($results, false);
 
@@ -70,13 +73,14 @@ final class StrategyAdapterTest extends TestCase
             }
         };
 
-        (new StrategyAdapter($strategy))->evaluate(new AccessRequest(null, 'THING'), [
-            self::cast(AccessOutcome::grant('yes')),
-            self::cast(AccessOutcome::abstain('nothing to say')),
-            self::cast(AccessOutcome::deny('no')),
-        ]);
+        new StrategyAdapter($strategy)
+            ->evaluate(new AccessRequest(null, 'THING'), [
+                self::cast(AccessOutcome::grant('yes')),
+                self::cast(AccessOutcome::abstain('nothing to say')),
+                self::cast(AccessOutcome::deny('no')),
+            ]);
 
-        $this->assertSame([
+        static::assertSame([
             SecurityVoterInterface::ACCESS_GRANTED,
             SecurityVoterInterface::ACCESS_ABSTAIN,
             SecurityVoterInterface::ACCESS_DENIED,
@@ -94,8 +98,8 @@ final class StrategyAdapterTest extends TestCase
 
     public function testItCarriesTheNameItIsRegisteredUnder()
     {
-        $this->assertSame('security', (new StrategyAdapter(new AffirmativeStrategy()))->getName());
-        $this->assertSame('the_application', (new StrategyAdapter(new AffirmativeStrategy(), 'the_application'))->getName());
+        static::assertSame('security', new StrategyAdapter(new AffirmativeStrategy())->getName());
+        static::assertSame('the_application', new StrategyAdapter(new AffirmativeStrategy(), 'the_application')->getName());
     }
 
     /**
@@ -106,7 +110,7 @@ final class StrategyAdapterTest extends TestCase
     {
         $votes = [self::cast(AccessOutcome::abstain('nothing to say'))];
 
-        $this->assertSame(DecisionVote::ACCESS_DENIED, (new StrategyAdapter(new AffirmativeStrategy(false)))->evaluate(new AccessRequest(null, 'THING'), $votes)->decision);
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, (new StrategyAdapter(new AffirmativeStrategy(true)))->evaluate(new AccessRequest(null, 'THING'), $votes)->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, new StrategyAdapter(new AffirmativeStrategy(false))->evaluate(new AccessRequest(null, 'THING'), $votes)->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, new StrategyAdapter(new AffirmativeStrategy(true))->evaluate(new AccessRequest(null, 'THING'), $votes)->decision);
     }
 }

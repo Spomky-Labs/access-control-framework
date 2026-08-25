@@ -13,13 +13,14 @@ use AccessControl\Requester\RequesterProviderInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use function is_array;
+use function is_object;
+use function is_string;
 
 /**
  * Denials are reported with the component's own exception: Security's exception listener catches
  * the marker interface, so a firewall still answers 403 or redirects to the login page, and an
  * application without one gets the 403 the exception carries.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -52,11 +53,11 @@ final readonly class AccessPolicyListener implements EventSubscriberInterface
 
         foreach ($event->getAttributes() as $attributes) {
             foreach ($attributes as $attribute) {
-                if (!$attribute instanceof AccessPolicyInterface) {
+                if (! $attribute instanceof AccessPolicyInterface) {
                     continue;
                 }
 
-                if (DecisionVote::ACCESS_DENIED !== $this->accessPolicyEvaluator->evaluate($attribute, $context)->decision) {
+                if ($this->accessPolicyEvaluator->evaluate($attribute, $context)->decision !== DecisionVote::ACCESS_DENIED) {
                     continue;
                 }
 
@@ -71,9 +72,9 @@ final readonly class AccessPolicyListener implements EventSubscriberInterface
     private static function originOf(mixed $controller): string
     {
         return match (true) {
-            \is_string($controller) => $controller,
-            \is_array($controller) => (\is_object($controller[0]) ? $controller[0]::class : $controller[0]).'::'.$controller[1],
-            default => get_debug_type($controller).'::__invoke',
+            is_string($controller) => $controller,
+            is_array($controller) => (is_object($controller[0]) ? $controller[0]::class : $controller[0]) . '::' . $controller[1],
+            default => get_debug_type($controller) . '::__invoke',
         };
     }
 }

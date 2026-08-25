@@ -23,9 +23,10 @@ final readonly class HeaderRequesterProvider implements RequesterProviderInterfa
 
     public function getRequester(): ?RolesRequester
     {
-        $roles = $this->requestStack->getCurrentRequest()?->headers->get('X-Roles');
+        $roles = $this->requestStack->getCurrentRequest()?->headers
+            ->get('X-Roles');
 
-        if (null === $roles || '' === $roles) {
+        if ($roles === null || $roles === '') {
             return null;
         }
 

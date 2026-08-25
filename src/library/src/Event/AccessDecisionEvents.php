@@ -19,8 +19,6 @@ use AccessControl\VoterInterface;
  * The policies are kept for a different reason again: a composite is what makes a verdict, and the
  * decisions under it never say which operator combined them.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class AccessDecisionEvents
@@ -42,7 +40,7 @@ final class AccessDecisionEvents
     {
         $this->events[] = $event;
 
-        if (null !== $caller) {
+        if ($caller !== null) {
             $this->callers[spl_object_id($event)] = $caller;
         }
     }
@@ -107,7 +105,7 @@ final class AccessDecisionEvents
     {
         return array_values(array_filter(
             $this->getDecisions(),
-            static fn (AccessDecisionEvent $event): bool => $event->accessRequest->attribute == $attribute,
+            static fn (AccessDecisionEvent $event): bool => $event->accessRequest->attribute === $attribute,
         ));
     }
 
@@ -121,7 +119,7 @@ final class AccessDecisionEvents
         return array_values(array_filter(
             $this->getVotes(),
             static fn (VoteEvent $event): bool => $event->voter instanceof $voter
-                && (null === $decision || $decision === $event->voterOutcome->decision),
+                && ($decision === null || $decision === $event->voterOutcome->decision),
         ));
     }
 

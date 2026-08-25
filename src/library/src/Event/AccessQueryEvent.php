@@ -14,8 +14,6 @@ use Symfony\Contracts\EventDispatcher\Event;
  * per role, so a flat log of decisions cannot say which of them were the same question. This closes
  * a question, and everything recorded since the previous one belongs to it.
  *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
- *
  * @experimental
  */
 final class AccessQueryEvent extends Event

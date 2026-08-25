@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AccessControl\Bundle\Test;
 
-use PHPUnit\Framework\Constraint\LogicalNot;
 use AccessControl\DecisionVote;
 use AccessControl\Event\AccessDecisionEvents;
 use AccessControl\Test\Constraint as AccessControlConstraint;
 use AccessControl\VoterInterface;
+use PHPUnit\Framework\Constraint\LogicalNot;
 
 /**
  * Assertions on what the access control stack decided during the last request or command.
@@ -17,8 +17,6 @@ use AccessControl\VoterInterface;
  * so that a test can state which attribute was refused, and by which voter, rather than settle for
  * the status code. To assert on an answer already in hand, see the AccessOutcomeAssertionsTrait of
  * the component.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 trait AccessControlAssertionsTrait
 {
@@ -55,7 +53,8 @@ trait AccessControlAssertionsTrait
         $container = static::getContainer();
 
         if ($container->has('access_control.decision_logger')) {
-            return $container->get('access_control.decision_logger')->getEvents();
+            return $container->get('access_control.decision_logger')
+                ->getEvents();
         }
 
         static::fail('A client must have AccessControl enabled in debug mode to make access assertions. Did you forget to require spomky-labs/access-control-bundle?');

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests;
 
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessControlManager;
 use AccessControl\ExpressionLanguage;
 use AccessControl\Strategy\DenyOverridesStrategy;
@@ -18,18 +17,21 @@ use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleHierarchyInterface;
 use AccessControl\Voter\RBAC\RoleVoter;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 abstract class StrategyTestCase extends TestCase
 {
     private ?AccessControlManager $accessControlManager = null;
+
     private ?FakeEventDispatcher $eventDispatcher = null;
+
     private ?TokenStorageInterface $tokenStorage = null;
 
     protected function getTokenStorage(): TokenStorageInterface
     {
-        if (null === $this->tokenStorage) {
+        if ($this->tokenStorage === null) {
             $this->tokenStorage = new FakeTokenStorage();
         }
 
@@ -42,7 +44,7 @@ abstract class StrategyTestCase extends TestCase
      */
     protected function getAccessControlManager(): AccessControlManager
     {
-        if (null === $this->accessControlManager) {
+        if ($this->accessControlManager === null) {
             $manager = null;
             $roleHierarchy = $this->getRoleHierarchy();
 
@@ -69,7 +71,7 @@ abstract class StrategyTestCase extends TestCase
 
     protected function getEventDispatcher(): FakeEventDispatcher
     {
-        if (null === $this->eventDispatcher) {
+        if ($this->eventDispatcher === null) {
             $this->eventDispatcher = new FakeEventDispatcher();
         }
 

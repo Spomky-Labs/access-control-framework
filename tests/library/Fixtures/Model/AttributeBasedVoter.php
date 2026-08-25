@@ -7,6 +7,7 @@ namespace AccessControl\Tests\Fixtures\Model;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
+use function is_array;
 
 /**
  * ABAC: the three sources of attributes are the requester, the resource and the environment.
@@ -18,7 +19,7 @@ final class AttributeBasedVoter implements VoterInterface
 {
     public function supportsAttribute(mixed $attribute): bool
     {
-        return 'read' === $attribute;
+        return $attribute === 'read';
     }
 
     public function supportsSubject(mixed $subject): bool
@@ -28,7 +29,7 @@ final class AttributeBasedVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        if (!\is_array($accessRequest->requester) || !\is_array($accessRequest->subject)) {
+        if (! is_array($accessRequest->requester) || ! is_array($accessRequest->subject)) {
             return AccessOutcome::abstain('The request carries no attributes.');
         }
 
@@ -36,7 +37,7 @@ final class AttributeBasedVoter implements VoterInterface
             return AccessOutcome::deny('The requester and the resource belong to different departments.');
         }
 
-        if ('corporate' !== $accessRequest->environment->get('network')) {
+        if ($accessRequest->environment->get('network') !== 'corporate') {
             return AccessOutcome::deny('The request does not come from the corporate network.');
         }
 

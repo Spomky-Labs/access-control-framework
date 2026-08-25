@@ -23,21 +23,24 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * The voters never agree with one another on purpose. Voters that agree say nothing about the
  * algorithm combining them, which is exactly how the divergence went unnoticed.
  */
-class StrategyParityTest extends WebTestCase
+final class StrategyParityTest extends WebTestCase
 {
     /**
      * Two refusing against one granting: the shape that separates the four algorithms.
      */
-    private const MAJORITY_DENIES = [false, false, true];
+    private const array MAJORITY_DENIES = [false, false, true];
 
     /**
      * One each, so that the equality rule of consensus is the only thing left to decide.
      */
-    private const A_TIE = [false, true];
+    private const array A_TIE = [false, true];
 
     private static string $shape = self::class;
+
     private static array $voters = [];
+
     private static array $decisionManager = [];
+
     private static array $accessControl = [];
 
     private static string $attribute = 'THING';
@@ -53,8 +56,16 @@ class StrategyParityTest extends WebTestCase
     public static function provideAllAbstainRules(): iterable
     {
         yield 'the default of either stack' => [[], [], 'denied'];
-        yield 'granting when nobody answered' => [['allow_if_all_abstain' => true], ['allow_if_all_abstain' => true], 'granted'];
-        yield 'refusing when nobody answered' => [['allow_if_all_abstain' => false], ['allow_if_all_abstain' => false], 'denied'];
+        yield 'granting when nobody answered' => [[
+            'allow_if_all_abstain' => true,
+        ], [
+            'allow_if_all_abstain' => true,
+        ], 'granted'];
+        yield 'refusing when nobody answered' => [[
+            'allow_if_all_abstain' => false,
+        ], [
+            'allow_if_all_abstain' => false,
+        ], 'denied'];
     }
 
     /**
@@ -81,9 +92,9 @@ class StrategyParityTest extends WebTestCase
             self::$attribute = 'THING';
         }
 
-        $this->assertSame($expected, $security, 'Security did not answer what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle changed the answer.');
-        $this->assertSame($security, $alone, 'The component alone does not answer like Security.');
+        static::assertSame($expected, $security, 'Security did not answer what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle changed the answer.');
+        static::assertSame($security, $alone, 'The component alone does not answer like Security.');
     }
 
     /**
@@ -100,49 +111,77 @@ class StrategyParityTest extends WebTestCase
 
         yield 'affirmative and permit_overrides' => [
             self::MAJORITY_DENIES,
-            ['strategy' => 'affirmative'],
-            ['default_strategy' => 'permit_overrides'],
+            [
+                'strategy' => 'affirmative',
+            ],
+            [
+                'default_strategy' => 'permit_overrides',
+            ],
             'granted',
         ];
 
         yield 'unanimous and deny_overrides' => [
             self::MAJORITY_DENIES,
-            ['strategy' => 'unanimous'],
-            ['default_strategy' => 'deny_overrides'],
+            [
+                'strategy' => 'unanimous',
+            ],
+            [
+                'default_strategy' => 'deny_overrides',
+            ],
             'denied',
         ];
 
         yield 'consensus and majority' => [
             self::MAJORITY_DENIES,
-            ['strategy' => 'consensus'],
-            ['default_strategy' => 'majority'],
+            [
+                'strategy' => 'consensus',
+            ],
+            [
+                'default_strategy' => 'majority',
+            ],
             'denied',
         ];
 
         yield 'priority and first_applicable' => [
             self::MAJORITY_DENIES,
-            ['strategy' => 'priority'],
-            ['default_strategy' => 'first_applicable'],
+            [
+                'strategy' => 'priority',
+            ],
+            [
+                'default_strategy' => 'first_applicable',
+            ],
             'denied',
         ];
 
         yield 'a tie granted' => [
             self::A_TIE,
-            ['strategy' => 'consensus'],
-            ['default_strategy' => 'majority'],
+            [
+                'strategy' => 'consensus',
+            ],
+            [
+                'default_strategy' => 'majority',
+            ],
             'granted',
         ];
 
         yield 'a tie refused' => [
             self::A_TIE,
-            ['strategy' => 'consensus', 'allow_if_equal_granted_denied' => false],
-            ['default_strategy' => 'majority', 'allow_if_equal_granted_denied' => false],
+            [
+                'strategy' => 'consensus',
+                'allow_if_equal_granted_denied' => false,
+            ],
+            [
+                'default_strategy' => 'majority',
+                'allow_if_equal_granted_denied' => false,
+            ],
             'denied',
         ];
 
         yield 'an algorithm of the application' => [
             self::MAJORITY_DENIES,
-            ['strategy_service' => AlwaysDenyingStrategy::class],
+            [
+                'strategy_service' => AlwaysDenyingStrategy::class,
+            ],
             null,
             'denied',
         ];
@@ -159,16 +198,16 @@ class StrategyParityTest extends WebTestCase
         $security = $this->answerOf(StrategyParityKernel::SECURITY, $voters, $decisionManager);
         $both = $this->answerOf(StrategyParityKernel::BOTH, $voters, $decisionManager);
 
-        $this->assertSame($expected, $security, 'Security did not answer what this test assumes.');
-        $this->assertSame($security, $both, 'Installing the bundle changed the answer.');
+        static::assertSame($expected, $security, 'Security did not answer what this test assumes.');
+        static::assertSame($security, $both, 'Installing the bundle changed the answer.');
 
-        if (null === $accessControl) {
+        if ($accessControl === null) {
             return;
         }
 
         $alone = $this->answerOf(StrategyParityKernel::ACCESS_CONTROL, $voters, [], $accessControl);
 
-        $this->assertSame($security, $alone, 'The component alone does not answer like Security.');
+        static::assertSame($security, $alone, 'The component alone does not answer like Security.');
     }
 
     /**
@@ -185,8 +224,12 @@ class StrategyParityTest extends WebTestCase
         self::ensureKernelShutdown();
 
         $client = static::createClient();
-        $client->request('GET', '/strategy-parity', server: ['PHP_AUTH_USER' => 'alice', 'PHP_AUTH_PW' => 'pa$$word']);
+        $client->request('GET', '/strategy-parity', server: [
+            'PHP_AUTH_USER' => 'alice',
+            'PHP_AUTH_PW' => 'pa$$word',
+        ]);
 
-        return $client->getResponse()->getContent();
+        return $client->getResponse()
+            ->getContent();
     }
 }

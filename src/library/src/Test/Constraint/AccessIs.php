@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AccessControl\Test\Constraint;
 
-use PHPUnit\Framework\Constraint\Constraint;
 use AccessControl\AccessDecision;
 use AccessControl\AccessOutcome;
 use AccessControl\DecisionVote;
+use PHPUnit\Framework\Constraint\Constraint;
+use function sprintf;
 
 /**
  * Matches the verdict of a voter or of a whole stack.
@@ -15,8 +16,6 @@ use AccessControl\DecisionVote;
  * One constraint carries the three verdicts rather than three classes carrying identical code, in
  * the manner of ResponseStatusCodeSame. Being a constraint rather than a bare comparison is what
  * puts the reason in the failure message, and it composes with LogicalNot and the others.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  */
 final class AccessIs extends Constraint
 {
@@ -41,15 +40,15 @@ final class AccessIs extends Constraint
 
     protected function failureDescription($other): string
     {
-        return 'access '.$this->toString();
+        return 'access ' . $this->toString();
     }
 
     protected function additionalFailureDescription($other): string
     {
-        if (!$other instanceof AccessOutcome && !$other instanceof AccessDecision) {
-            return \sprintf('Got a "%s", which is neither an access outcome nor an access decision.', get_debug_type($other));
+        if (! $other instanceof AccessOutcome && ! $other instanceof AccessDecision) {
+            return sprintf('Got a "%s", which is neither an access outcome nor an access decision.', get_debug_type($other));
         }
 
-        return \sprintf('Got %s.%s', $other->decision->value, null !== $other->reason ? ' Reason: '.$other->reason : ' No reason was given.');
+        return sprintf('Got %s.%s', $other->decision->value, $other->reason !== null ? ' Reason: ' . $other->reason : ' No reason was given.');
     }
 }

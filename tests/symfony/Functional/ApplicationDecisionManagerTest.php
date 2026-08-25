@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Bundle\Functional;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use AccessControl\Requester\TokenStorageRequesterProvider;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 /**
@@ -18,9 +18,11 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * requester provider that knows nobody. Measured: with a firewall and a logged in user, every
  * requester on this side was anonymous.
  */
-class ApplicationDecisionManagerTest extends WebTestCase
+final class ApplicationDecisionManagerTest extends WebTestCase
 {
-    private const CONFIG = ['service' => AlwaysDenyingDecisionManager::class];
+    private const array CONFIG = [
+        'service' => AlwaysDenyingDecisionManager::class,
+    ];
 
     protected static function createKernel(array $options = []): KernelInterface
     {
@@ -34,9 +36,12 @@ class ApplicationDecisionManagerTest extends WebTestCase
     public function testTheManagerTheApplicationNamedKeepsAnswering()
     {
         $client = static::createClient();
-        $client->request('GET', '/strategy-parity', server: ['PHP_AUTH_USER' => 'alice', 'PHP_AUTH_PW' => 'pa$$word']);
+        $client->request('GET', '/strategy-parity', server: [
+            'PHP_AUTH_USER' => 'alice',
+            'PHP_AUTH_PW' => 'pa$$word',
+        ]);
 
-        $this->assertSame('denied', $client->getResponse()->getContent());
+        static::assertSame('denied', $client->getResponse()->getContent());
     }
 
     /**
@@ -47,6 +52,6 @@ class ApplicationDecisionManagerTest extends WebTestCase
     {
         static::createClient();
 
-        $this->assertInstanceOf(TokenStorageRequesterProvider::class, static::getContainer()->get('access_control.requester_provider'));
+        static::assertInstanceOf(TokenStorageRequesterProvider::class, static::getContainer()->get('access_control.requester_provider'));
     }
 }

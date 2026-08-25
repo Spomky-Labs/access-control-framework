@@ -11,14 +11,13 @@ use AccessControl\Event\AccessQueryEvent;
 use AccessControl\Event\VoteEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Contracts\Service\ResetInterface;
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 /**
  * Keeps every decision and every vote, so that an integration test can tell why access was refused.
  *
  * The response carries no diagnostic on purpose, and this is what fills that gap where it is safe
  * to: in the test, not in the answer sent to the requester.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -80,12 +79,12 @@ final class AccessDecisionLoggerListener implements EventSubscriberInterface, Re
     {
         $previous = null;
 
-        foreach (debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, 16) as $frame) {
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 16) as $frame) {
             $class = $frame['class'] ?? null;
 
-            if (null !== $class
+            if ($class !== null
                 && (str_starts_with($class, __NAMESPACE__) || str_starts_with($class, 'AccessControl\\') || str_contains($class, 'EventDispatcher'))
-                && !str_starts_with($class, 'AccessControl\\Tests\\')
+                && ! str_starts_with($class, 'AccessControl\\Tests\\')
             ) {
                 $previous = $frame;
 
@@ -93,7 +92,7 @@ final class AccessDecisionLoggerListener implements EventSubscriberInterface, Re
             }
 
             return [
-                'name' => null === $class ? $frame['function'] : $class.'::'.$frame['function'],
+                'name' => $class === null ? $frame['function'] : $class . '::' . $frame['function'],
                 'file' => $previous['file'] ?? null,
                 'line' => $previous['line'] ?? null,
             ];

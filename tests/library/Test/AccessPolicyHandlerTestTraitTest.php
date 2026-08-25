@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AccessControl\Tests\Test;
 
-use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\TestCase;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessPolicyContext;
 use AccessControl\AccessPolicyEvaluator;
@@ -16,6 +14,8 @@ use AccessControl\Handler\AccessPolicyHandlerInterface;
 use AccessControl\Test\AccessPolicyHandlerTestTrait;
 use AccessControl\Tests\Fixtures\Not;
 use AccessControl\Tests\Fixtures\NotHandler;
+use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Exercises the shipped trait the way a userland handler author would, on the Not handler of the
@@ -32,8 +32,8 @@ final class AccessPolicyHandlerTestTraitTest extends TestCase
 
     public function testTheHandlerUnderTestIsReached()
     {
-        $this->assertSame(DecisionVote::ACCESS_DENIED, $this->evaluate(new Not([self::granting()]))->decision);
-        $this->assertSame(DecisionVote::ACCESS_GRANTED, $this->evaluate(new Not([self::denying()]))->decision);
+        static::assertSame(DecisionVote::ACCESS_DENIED, $this->evaluate(new Not([self::granting()]))->decision);
+        static::assertSame(DecisionVote::ACCESS_GRANTED, $this->evaluate(new Not([self::denying()]))->decision);
     }
 
     /**
@@ -45,7 +45,7 @@ final class AccessPolicyHandlerTestTraitTest extends TestCase
     {
         $this->expectException(UnsupportedAccessPolicyException::class);
 
-        $this->evaluate(new class implements AccessPolicyInterface {
+        $this->evaluate(new class() implements AccessPolicyInterface {
             public ?string $message = null;
         });
     }
@@ -67,7 +67,7 @@ final class AccessPolicyHandlerTestTraitTest extends TestCase
 
             protected function createHandler(): AccessPolicyHandlerInterface
             {
-                return new class implements AccessPolicyHandlerInterface {
+                return new class() implements AccessPolicyHandlerInterface {
                     public function supports(AccessPolicyInterface $accessPolicy): bool
                     {
                         return true;

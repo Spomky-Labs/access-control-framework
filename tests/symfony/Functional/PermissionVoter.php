@@ -7,6 +7,7 @@ namespace AccessControl\Tests\Bundle\Functional;
 use AccessControl\AccessOutcome;
 use AccessControl\AccessRequest;
 use AccessControl\VoterInterface;
+use function in_array;
 
 /**
  * An application voter, reached through autoconfiguration alone.
@@ -15,7 +16,7 @@ final class PermissionVoter implements VoterInterface
 {
     public function supportsAttribute(mixed $attribute): bool
     {
-        return \in_array($attribute, ['EDIT', 'DELETE'], true);
+        return in_array($attribute, ['EDIT', 'DELETE'], true);
     }
 
     public function supportsSubject(mixed $subject): bool
@@ -25,7 +26,7 @@ final class PermissionVoter implements VoterInterface
 
     public function vote(AccessRequest $accessRequest): AccessOutcome
     {
-        return 'EDIT' === $accessRequest->attribute
+        return $accessRequest->attribute === 'EDIT'
             ? AccessOutcome::grant('Everyone may edit around here.')
             : AccessOutcome::deny('Deleting is reserved.');
     }

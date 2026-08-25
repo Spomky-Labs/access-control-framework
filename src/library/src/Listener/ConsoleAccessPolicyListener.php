@@ -10,6 +10,10 @@ use AccessControl\Attribute\AccessPolicyInterface;
 use AccessControl\DecisionVote;
 use AccessControl\Exception\AccessDeniedException;
 use AccessControl\Requester\RequesterProviderInterface;
+use ReflectionAttribute;
+use ReflectionClass;
+use ReflectionFunction;
+use ReflectionMethod;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Command\TraceableCommand;
@@ -31,8 +35,6 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * listener on ConsoleEvents::ERROR calling setExitCode(), which writes the value onto the exception
  * as well and so has the last word. It can branch on the command or on the requester, which no
  * setting of ours would have allowed.
- *
- * @author Florent Morselli <florent.morselli@spomky-labs.com>
  *
  * @experimental
  */
@@ -70,7 +72,7 @@ final readonly class ConsoleAccessPolicyListener implements EventSubscriberInter
         );
 
         foreach ($this->getAccessPolicies($command) as $accessPolicy) {
-            if (DecisionVote::ACCESS_DENIED !== $this->accessPolicyEvaluator->evaluate($accessPolicy, $context)->decision) {
+            if ($this->accessPolicyEvaluator->evaluate($accessPolicy, $context)->decision !== DecisionVote::ACCESS_DENIED) {
                 continue;
             }
 
@@ -95,7 +97,7 @@ final readonly class ConsoleAccessPolicyListener implements EventSubscriberInter
             $command = $command->getCommand();
         }
 
-        if (!$command instanceof TraceableCommand) {
+        if (! $command instanceof TraceableCommand) {
             return;
         }
 
@@ -140,21 +142,23 @@ final readonly class ConsoleAccessPolicyListener implements EventSubscriberInter
     {
         $command = self::unwrap($command);
 
-        $classes = [$command::class => new \ReflectionClass($command)];
+        $classes = [
+            $command::class => new ReflectionClass($command),
+        ];
         $functions = [];
 
         if (null !== $code = $command->getCode()) {
-            $functions[] = $function = new \ReflectionFunction($code(...));
+            $functions[] = $function = new ReflectionFunction($code(...));
 
             if (null !== $scope = $function->getClosureScopeClass()) {
                 $classes[$scope->name] ??= $scope;
             }
         } else {
-            $functions[] = new \ReflectionMethod($command, 'execute');
+            $functions[] = new ReflectionMethod($command, 'execute');
         }
 
         foreach ([...array_values($classes), ...$functions] as $reflection) {
-            foreach ($reflection->getAttributes(AccessPolicyInterface::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+            foreach ($reflection->getAttributes(AccessPolicyInterface::class, ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
                 yield $attribute->newInstance();
             }
         }

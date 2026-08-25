@@ -21,7 +21,7 @@ final readonly class PublishedPostVoter implements VoterInterface
 
     public function supportsAttribute(mixed $attribute): bool
     {
-        return 'read' === $attribute;
+        return $attribute === 'read';
     }
 
     public function supportsSubject(mixed $subject): bool

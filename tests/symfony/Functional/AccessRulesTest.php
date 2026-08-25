@@ -7,12 +7,13 @@ namespace AccessControl\Tests\Bundle\Functional;
 use AccessControl\Bundle\Test\AccessControlAssertionsTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Throwable;
 
 /**
  * The rules of a security.yaml, declared under access_control.rules and enforced with no Security
  * anywhere. Not one controller carries an attribute: what guards them is the configuration alone.
  */
-class AccessRulesTest extends WebTestCase
+final class AccessRulesTest extends WebTestCase
 {
     use AccessControlAssertionsTrait;
 
@@ -26,8 +27,8 @@ class AccessRulesTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/open');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertSame('open', $client->getResponse()->getContent());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame('open', $client->getResponse()->getContent());
         $this->assertAccessWasGrantedOn('PUBLIC_ACCESS');
     }
 
@@ -38,18 +39,22 @@ class AccessRulesTest extends WebTestCase
     public function testPublicAccessIsUnderstoodWithoutSecurity()
     {
         $client = static::createClient();
-        $client->request('GET', '/rules/open', server: ['HTTP_X_ROLES' => '']);
+        $client->request('GET', '/rules/open', server: [
+            'HTTP_X_ROLES' => '',
+        ]);
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
     }
 
     public function testARequesterHoldingTheRoleGetsThrough()
     {
         $client = static::createClient();
-        $client->request('GET', '/rules/admin', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/rules/admin', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertSame('admin', $client->getResponse()->getContent());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame('admin', $client->getResponse()->getContent());
         $this->assertAccessWasGrantedOn('ROLE_ADMIN');
     }
 
@@ -59,10 +64,12 @@ class AccessRulesTest extends WebTestCase
         $client->catchExceptions(false);
 
         try {
-            $client->request('GET', '/rules/admin', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
-            $this->fail('Access should have been denied.');
-        } catch (\Throwable $exception) {
-            $this->assertStringContainsString('Access Denied', $exception->getMessage());
+            $client->request('GET', '/rules/admin', server: [
+                'HTTP_X_ROLES' => 'ROLE_USER',
+            ]);
+            static::fail('Access should have been denied.');
+        } catch (Throwable $exception) {
+            static::assertStringContainsString('Access Denied', $exception->getMessage());
         }
 
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
@@ -77,16 +84,20 @@ class AccessRulesTest extends WebTestCase
         AccessRulesController::$reached = [];
 
         $client = static::createClient();
-        $client->request('GET', '/rules/admin', server: ['HTTP_X_ROLES' => 'ROLE_USER']);
+        $client->request('GET', '/rules/admin', server: [
+            'HTTP_X_ROLES' => 'ROLE_USER',
+        ]);
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
-        $this->assertSame([], AccessRulesController::$reached);
+        static::assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame([], AccessRulesController::$reached);
 
         static::ensureKernelShutdown();
         $client = static::createClient();
-        $client->request('GET', '/rules/admin', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/rules/admin', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame(['admin'], AccessRulesController::$reached);
+        static::assertSame(['admin'], AccessRulesController::$reached);
     }
 
     /**
@@ -98,18 +109,22 @@ class AccessRulesTest extends WebTestCase
         foreach (['ROLE_ADMIN', 'ROLE_MANAGER'] as $role) {
             static::ensureKernelShutdown();
             $client = static::createClient();
-            $client->request('GET', '/rules/staff', server: ['HTTP_X_ROLES' => $role]);
+            $client->request('GET', '/rules/staff', server: [
+                'HTTP_X_ROLES' => $role,
+            ]);
 
-            $this->assertSame(200, $client->getResponse()->getStatusCode(), $role);
+            static::assertSame(200, $client->getResponse()->getStatusCode(), $role);
         }
     }
 
     public function testNoneOfTheRolesOfARuleIsARefusal()
     {
         $client = static::createClient();
-        $client->request('GET', '/rules/staff', server: ['HTTP_X_ROLES' => 'ROLE_ACCOUNTANT']);
+        $client->request('GET', '/rules/staff', server: [
+            'HTTP_X_ROLES' => 'ROLE_ACCOUNTANT',
+        ]);
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
     }
 
     /**
@@ -119,15 +134,19 @@ class AccessRulesTest extends WebTestCase
     public function testAnAllowIfExpressionReadsTheRequest()
     {
         $client = static::createClient();
-        $client->request('GET', '/rules/local', server: ['REMOTE_ADDR' => '10.0.0.1']);
+        $client->request('GET', '/rules/local', server: [
+            'REMOTE_ADDR' => '10.0.0.1',
+        ]);
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
 
         static::ensureKernelShutdown();
         $client = static::createClient();
-        $client->request('GET', '/rules/local', server: ['REMOTE_ADDR' => '192.168.1.1']);
+        $client->request('GET', '/rules/local', server: [
+            'REMOTE_ADDR' => '192.168.1.1',
+        ]);
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
     }
 
     /**
@@ -139,23 +158,25 @@ class AccessRulesTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/rules/posted');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
         $this->assertAccessWasGrantedOn('PUBLIC_ACCESS');
 
         static::ensureKernelShutdown();
         $client = static::createClient();
         $client->request('POST', '/rules/posted');
 
-        $this->assertSame(403, $client->getResponse()->getStatusCode());
+        static::assertSame(403, $client->getResponse()->getStatusCode());
         $this->assertAccessWasDeniedOn('ROLE_ADMIN');
     }
 
     public function testARouteNamesTheRequestsARuleCovers()
     {
         $client = static::createClient();
-        $client->request('GET', '/rules/by-route', server: ['HTTP_X_ROLES' => 'ROLE_ADMIN']);
+        $client->request('GET', '/rules/by-route', server: [
+            'HTTP_X_ROLES' => 'ROLE_ADMIN',
+        ]);
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
         $this->assertAccessWasGrantedOn('ROLE_ADMIN');
     }
 
@@ -164,8 +185,8 @@ class AccessRulesTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', 'http://localhost/rules/secure');
 
-        $this->assertSame(301, $client->getResponse()->getStatusCode());
-        $this->assertSame('https://localhost/rules/secure', $client->getResponse()->headers->get('Location'));
+        static::assertSame(301, $client->getResponse()->getStatusCode());
+        static::assertSame('https://localhost/rules/secure', $client->getResponse()->headers->get('Location'));
     }
 
     /**
@@ -185,8 +206,8 @@ class AccessRulesTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', 'https://localhost/rules/secure');
 
-        $this->assertSame(200, $client->getResponse()->getStatusCode());
-        $this->assertSame('secure', $client->getResponse()->getContent());
+        static::assertSame(200, $client->getResponse()->getStatusCode());
+        static::assertSame('secure', $client->getResponse()->getContent());
         $this->assertAccessWasGrantedOn('PUBLIC_ACCESS');
     }
 }

@@ -70,14 +70,16 @@ Quatre corrections au passage, chacune mesurée. **Remontées chez `Spomky-Labs/
 
 ## Contributions amont, indépendantes de ce projet
 
-Deux correctifs trouvés en développant le composant, sans rapport avec l'access control, à sortir sur `8.2` :
+Deux correctifs trouvés en développant le composant, sans rapport avec l'access control, **tous les deux sortis** :
 
-| PR | Contenu |
-|---|---|
-| amont 1 | `results.html.twig` du WebProfiler ne définit pas `has_dump`, plus un kernel de test capable de démarrer en debug et un test qui rend vraiment la page |
-| amont 2 | Le profilage console ne survit pas à une commande arrêtée à `ConsoleEvents::COMMAND` : défauts sur trois propriétés de `TraceableCommand`, `input` et `output` semés par `FrameworkBundle\Console\Application`, repli dans `CliRequest::getUri()` |
+| PR | Contenu | État |
+|---|---|---|
+| amont 1 | `results.html.twig` du WebProfiler ne définit pas `has_dump` | [symfony/symfony#65312](https://github.com/symfony/symfony/pull/65312), **corrigé en amont** |
+| amont 2 | Le profilage console ne survit pas à une commande arrêtée à `ConsoleEvents::COMMAND` : `input` et `output` semés par `FrameworkBundle\Console\Application`, défauts sur `arguments` et `options` de `TraceableCommand` | [symfony/symfony#65637](https://github.com/symfony/symfony/pull/65637), ouverte le 2026-08-25 sur `6.4` |
 
-Les deux diffs sont sauvés dans `~/.claude/projects/-home-florent-Projects-access-control-framework/upstream-patches/`, la branche Symfony qui les portait ayant été supprimée. Le troisième fichier de ce répertoire, `abandonne-frameworkbundle-integration.patch`, est l'intégration dans FrameworkBundle qui n'a plus lieu d'être : gardé pour mémoire, pas pour être rejoué.
+Amont 2 vise `6.4` et non `8.2` : le bogue existe depuis l'arrivée du profilage console et `6.4` est toujours la plus basse branche maintenue. Le diff sorti diffère de celui gardé en réserve : le repli dans `CliRequest::getUri()` et le défaut sur `ignoreValidation` se sont révélés inutiles, la propriété étant renseignée par le constructeur, et seuls `arguments` et `options` manquaient vraiment. Il porte un test fonctionnel, `FrameworkBundle\Tests\Functional\ConsoleProfilerTest`, qui échoue sans le correctif et couvre aussi la commande qui tourne normalement.
+
+Les diffs d'origine sont sauvés dans `~/.claude/projects/-home-florent-Projects-access-control-framework/upstream-patches/`, la branche Symfony qui les portait ayant été supprimée. Le troisième fichier de ce répertoire, `abandonne-frameworkbundle-integration.patch`, est l'intégration dans FrameworkBundle qui n'a plus lieu d'être : gardé pour mémoire, pas pour être rejoué.
 
 Amont 2 est **contourné ici** par `ConsoleAccessPolicyListener::recordTheInputOnTheTracingWrapper()`, qui renseigne le wrapper avant de refuser. Le contournement reste correct si la PR passe.
 

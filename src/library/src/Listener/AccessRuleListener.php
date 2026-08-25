@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessControl\Listener;
 
+use AccessControl\AccessEnvironment;
 use AccessControl\AccessPolicyContext;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\DecisionVote;
@@ -73,10 +74,10 @@ final readonly class AccessRuleListener implements EventSubscriberInterface
         $context = new AccessPolicyContext(
             $this->requesterProvider->getRequester(),
             [
-                'request' => $request,
+                AccessEnvironment::REQUEST => $request,
             ],
             [
-                'request' => $request,
+                AccessEnvironment::REQUEST => $request,
             ],
             self::ORIGIN,
         );

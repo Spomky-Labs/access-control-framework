@@ -91,9 +91,9 @@ Une troisième, plus large, ne peut pas être écrite telle quelle : `FrameworkE
 
 ## Le fond
 
-Cette liste en comptait quatre. **Trois étaient périmées**, relues et vérifiées dans le code le 2026-08-25 ; il n'en reste qu'une, et c'est un arbitrage.
+Cette liste en comptait quatre. **Les quatre sont closes**, relues et vérifiées dans le code le 2026-08-25.
 
-**Reste à trancher : l'environnement typé**, en remplacement de l'`AccessEnvironment` à clés libres. C'est aussi la réponse à natewiebe13 sur la désignation explicite de l'acteur. Rien d'autre ne dépend de cette décision, donc rien n'est bloqué en attendant.
+- ~~**Environnement typé**~~ **tranché le 2026-08-25 : on garde le sac à clés libres**, et on documente. La mesure a retourné la question. Le composant sème exactement quatre clés, `request` sur le web et `command`, `input`, `output` en console, et **n'en lit jamais aucune** : l'environnement est un transport vers l'`ExpressionVoter`, le `ClosureVoter` et le panneau, dont les consommateurs sont tous à clés-chaînes. Typer n'apporte donc rien à qui s'en sert, et mettrait HttpFoundation et Console dans des signatures d'une bibliothèque qui ne requiert que `php` et `symfony/event-dispatcher-contracts`. La faute de frappe, seule raison de typer, est déjà bruyante là où elle compte : une expression nommant une variable absente lève à la compilation. Le cas silencieux restant, `get('typo')` dans un voter applicatif, ne serait pas couvert non plus, les clés applicatives étant applicatives. Livré : les constantes `AccessEnvironment::REQUEST`, `COMMAND`, `INPUT`, `OUTPUT` et `SEEDED_KEYS`, utilisées là où les clés sont semées, et **un test par point d'entrée qui épingle le jeu de clés**, le web l'était déjà, la console ne l'était pas.
 
 Les trois autres, avec ce qui a été vérifié plutôt que supposé :
 

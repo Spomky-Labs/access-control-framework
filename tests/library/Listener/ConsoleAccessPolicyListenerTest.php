@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AccessControl\Tests\Listener;
 
 use AccessControl\AccessControlManager;
+use AccessControl\AccessEnvironment;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Exception\AccessDeniedException;
 use AccessControl\ExpressionLanguage;
@@ -163,6 +164,29 @@ final class ConsoleAccessPolicyListenerTest extends TestCase
         $this->expectException(AccessDeniedException::class);
 
         $listener->onConsoleCommand($this->createEvent($command));
+    }
+
+    /**
+     * The keys this entry point seeds are what a policy names in an expression, so dropping one or
+     * renaming it breaks every guard reading it, and does so at the point where the guard would
+     * simply stop applying. The web counterpart is pinned in AccessRuleListenerTest.
+     */
+    public function testTheConsoleSeedsTheKeysItSaysItDoes(): void
+    {
+        $command = new ExecuteLevelPolicyCommand();
+        $command->setDefinition(new InputDefinition([new InputArgument('slug', InputArgument::REQUIRED)]));
+        $event = $this->createEvent($command, [
+            'slug' => 'hello-world',
+        ]);
+
+        $this->createListener()
+            ->onConsoleCommand($event);
+
+        static::assertSame([
+            AccessEnvironment::COMMAND => $command,
+            AccessEnvironment::INPUT => $event->getInput(),
+            AccessEnvironment::OUTPUT => $event->getOutput(),
+        ], $this->subjectVoter->environment[0]);
     }
 
     private function createEvent(Command $command, array $parameters = []): CommandEvent

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AccessControl\Tests\Listener;
 
 use AccessControl\AccessControlManager;
+use AccessControl\AccessEnvironment;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicy;
 use AccessControl\Attribute\Argument;
@@ -143,7 +144,7 @@ final class AccessRuleListenerTest extends TestCase
 
         static::assertSame([$event->getRequest()], $voter->subjects);
         static::assertSame([
-            'request' => $event->getRequest(),
+            AccessEnvironment::REQUEST => $event->getRequest(),
         ], $voter->environment[0]);
     }
 

@@ -28,6 +28,37 @@ use function count;
 final readonly class AccessEnvironment implements IteratorAggregate, Countable
 {
     /**
+     * The HTTP request, seeded by every web entry point: the access policy listener, the URL rule
+     * listener and the #[IsGranted] bridge.
+     */
+    public const string REQUEST = 'request';
+
+    /**
+     * The command about to run, seeded by the console entry point.
+     */
+    public const string COMMAND = 'command';
+
+    /**
+     * The console input, seeded by the console entry point. This is where a policy reads an option.
+     */
+    public const string INPUT = 'input';
+
+    /**
+     * The console output, seeded by the console entry point.
+     */
+    public const string OUTPUT = 'output';
+
+    /**
+     * Every key this component seeds on its own, so that an application can tell them from its own.
+     *
+     * They are the only ones named here. The bag stays open on purpose: its consumers are string
+     * keyed, an expression naming request or input and a closure reading whatever the application
+     * put there, so a closed type would buy them nothing and would cost this library its
+     * independence from HttpFoundation and Console.
+     */
+    public const array SEEDED_KEYS = [self::REQUEST, self::COMMAND, self::INPUT, self::OUTPUT];
+
+    /**
      * @param array<string, mixed> $parameters
      */
     public function __construct(

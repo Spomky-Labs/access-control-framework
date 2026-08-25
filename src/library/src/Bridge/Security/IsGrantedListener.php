@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessControl\Bridge\Security;
 
+use AccessControl\AccessEnvironment;
 use AccessControl\AccessPolicyContext;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicy;
@@ -62,7 +63,7 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
             $this->requesterProvider->getRequester(),
             $event->getNamedArguments(),
             [
-                'request' => $event->getRequest(),
+                AccessEnvironment::REQUEST => $event->getRequest(),
                 'args' => $event->getArguments(),
             ],
             self::originOf($event->getController()),

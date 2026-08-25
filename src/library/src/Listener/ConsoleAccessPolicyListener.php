@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessControl\Listener;
 
+use AccessControl\AccessEnvironment;
 use AccessControl\AccessPolicyContext;
 use AccessControl\AccessPolicyEvaluator;
 use AccessControl\Attribute\AccessPolicyInterface;
@@ -64,9 +65,9 @@ final readonly class ConsoleAccessPolicyListener implements EventSubscriberInter
             $this->requesterProvider->getRequester(),
             [...$input->getArguments(), ...$input->getOptions()],
             [
-                'command' => $command,
-                'input' => $input,
-                'output' => $event->getOutput(),
+                AccessEnvironment::COMMAND => $command,
+                AccessEnvironment::INPUT => $input,
+                AccessEnvironment::OUTPUT => $event->getOutput(),
             ],
             $command->getName() ?? $command::class,
         );

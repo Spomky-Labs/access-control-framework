@@ -13,7 +13,9 @@ Portage hors du dépôt Symfony fait le 2026-08-17, après la clôture de symfon
 3. ~~**Passer l'outillage**~~ **fait le 2026-08-17**. Voir « L'outillage, ce qu'il a trouvé » plus bas : lint, ECS, Rector, PHPStan, Deptrac, validate et check-licenses sont verts. Infection est mis de côté.
 3bis. ~~**Aligner le dépôt sur les autres frameworks**~~ **fait le 2026-08-17**, sur le patron de webauthn-framework : `.editorconfig`, `RELEASES.md`, et les fichiers de santé communautaire, des gabarits d'issue au guide de contribution, plus dependabot, renovate, les bots stale et lock-closed-issues, la revue de dépendances et le scorecard. **Les deux cibles de split disent maintenant qu'elles sont read-only là où ça compte** : chacune porte son `.github` avec le gabarit de PR qui renvoie ici, le workflow qui ferme une PR ouverte chez elle, le bot stale, et celui qui déplace la branche par défaut à chaque tag ; leur `.gitattributes` garde tout ça hors de l'archive distribuée. Un écart assumé : le `config.yml` des gabarits d'issue est du YAML invalide en amont, `about:|` sans espace, ce qui fait que GitHub jette le lien de contact sans rien dire. Corrigé ici, à remonter chez webauthn-framework.
 4. **Recette Flex** pour `access-control-bundle`, dans `symfony/recipes-contrib`.
-5. **Documentation** : le README couvre l'installation et les deux migrations ; il manque le vocabulaire XACML, `#[AccessPolicy]` et ses combinateurs, les requesters, et le panneau de profil.
+5. ~~**Documentation**~~ **écrite le 2026-08-25**, dans `~/Projects/access-control-doc`, sur la structure GitBook de webauthn-doc et jwt-doc : `README.md`, `SUMMARY.md` et 18 pages en cinq sections. Le README du dépôt est ramené à sa forme courte, badges et renvoi vers le site, et les deux README de sous-paquets pointent dessus. **Le dépôt GitHub de la doc reste à créer**, ainsi que le sous-domaine `access-control-doc.spomky-labs.com` vers lequel les trois README renvoient déjà.
+
+   Tout ce que cette liste signalait comme manquant y est : le vocabulaire XACML avec la table de correspondance et la raison pour laquelle `subject` désigne la ressource, `#[AccessPolicy]` et ses trois combinateurs, les requesters et l'acteur, le panneau de profil. Les trois points de « À documenter » aussi, plus les divergences assumées, rassemblées dans une page qui leur est consacrée. Chaque affirmation est vérifiée contre le code, pas contre le souvenir qu'on en a : la liste des états d'authentification, la signature des stratégies, le contrat des handlers et la forme de `AccessPolicyInterface` ont toutes été relues avant d'être écrites.
 
 ## L'outillage, ce qu'il a trouvé
 
@@ -94,11 +96,13 @@ Une troisième, plus large, ne peut pas être écrite telle quelle : `FrameworkE
 3. **Reprendre le reste de `Security\Core\Role\*`** : `getParentRoleNames()`, `SwitchUserRole`, `Role`.
 4. **L'arbre de politiques dans le profileur** : livré et non commité au moment de la clôture, voir la section du worklog du 2026-08-04. Vérifier qu'il a bien suivi le portage.
 
-## À documenter, sinon les gens choisiront au hasard
+## ~~À documenter, sinon les gens choisiront au hasard~~ fait
 
-- **Trois façons d'exprimer « A et B »** : stratégie `deny_overrides` sur les voters, attribut `All` sur les policies, `Expression`.
-- **Deux écritures de règle d'URL** cohabitent, `security.access_control` et `access_control.rules`, et elles tiennent ensemble (`RulesWithSecurityTest`). La précision qui compte : `requires_channel` est enforcé par le pare-feu quand il y en a un, par notre `ChannelListener` sinon, jamais par les deux.
-- **Code de sortie d'un refus en console** : 113 en dur, et l'échappatoire par un listener sur `ConsoleEvents::ERROR`.
+Les trois sont écrits, avec la règle de choix que la note réclamait plutôt qu'un simple inventaire.
+
+- **Trois façons d'exprimer « A et B »**, dans « Combining Algorithms » : `deny_overrides` quand la conjonction est une propriété de tout le modèle, `All` quand c'est ce point d'entrée-là qui exige deux questions, `Expression` quand une moitié n'est pas une question mais une condition.
+- **Deux écritures de règle d'URL**, dans « URL Rules », avec ce qui compte vraiment : les portées diffèrent, l'union est une intersection de permissions, et déplacer une règle sans supprimer l'originale est le cas qui ne lève pas. `requires_channel` est enforcé par le pare-feu quand il y en a un, par notre `ChannelListener` sinon, jamais par les deux.
+- **Code de sortie d'un refus en console**, dans « Console Commands » : `RETURN_CODE_DISABLED`, soit 113, pourquoi il n'est pas réglable, et l'échappatoire par un listener sur `ConsoleEvents::ERROR`.
 
 ## Arbitrages ouverts, petits
 

@@ -27,11 +27,15 @@ use AccessControl\Tests\Fixtures\SecurityPostVoter;
 use AccessControl\Voter\Expression\ExpressionVoter;
 use AccessControl\Voter\RBAC\RoleHierarchy;
 use AccessControl\Voter\RBAC\RoleVoter;
+use Closure;
 use IteratorAggregate;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
+use ReflectionParameter;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage as BaseExpressionLanguage;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
@@ -48,6 +52,7 @@ use Symfony\Component\Security\Core\Role\RoleHierarchyInterface as SecurityRoleH
 use Symfony\Component\Security\Http\EventListener\IsGrantedAttributeListener;
 use Throwable;
 use Traversable;
+use function array_any;
 use function sprintf;
 
 /**
@@ -207,6 +212,60 @@ final class IsGrantedParityTest extends TestCase
     }
 
     /**
+     * Until the request payload is mapped, a #[MapRequestPayload] argument holds the attribute
+     * itself, which no voter can tell anything from. Given the mapping, a subject read from that
+     * argument is mapped first, as Security does since Symfony 8.2, and the voter gets the object.
+     */
+    #[DataProvider('subjectsReadFromTheRequestPayload')]
+    public function testASubjectReadFromTheRequestPayloadIsMappedFirst(string $controllerMethod): void
+    {
+        $listener = $this->accessControlIsGrantedListener($this->mapRequestPayload([new Post('Hello')]));
+
+        static::assertTrue($this->isGranted($listener, $controllerMethod, [new MapRequestPayload()]));
+    }
+
+    /**
+     * @return iterable<string, array{0: string}>
+     */
+    public static function subjectsReadFromTheRequestPayload(): iterable
+    {
+        yield 'a subject named after the argument' => ['subjectTakenFromAnArgument'];
+        yield 'a subject given as an expression' => ['subjectFromAnExpression'];
+        yield 'a map of subjects given as expressions' => ['mapOfSubjectsFromExpressions'];
+    }
+
+    /**
+     * Mapping validates the payload, so a check that does not read it must not trigger it: an
+     * invalid payload would otherwise answer before the requester is denied.
+     */
+    public function testTheRequestPayloadIsNotMappedForASubjectThatDoesNotReadIt(): void
+    {
+        $listener = $this->accessControlIsGrantedListener(static fn () => static::fail('The request payload must not be mapped.'));
+
+        static::assertFalse($this->isGranted($listener, 'unreachableRole', [new MapRequestPayload()]));
+    }
+
+    /**
+     * Only meaningful once the installed Security maps the request payload itself, which is what
+     * the component follows.
+     */
+    #[DataProvider('subjectsReadFromTheRequestPayload')]
+    public function testTheSameSubjectReadFromTheRequestPayloadByEitherStack(string $controllerMethod): void
+    {
+        if (! array_any(new ReflectionMethod(IsGrantedAttributeListener::class, '__construct')->getParameters(), static fn (ReflectionParameter $parameter): bool => $parameter->name === 'mapRequestPayload')) {
+            static::markTestSkipped('The installed Security does not map the request payload before #[IsGranted].');
+        }
+
+        foreach ([new Post('Hello'), new Post('Goodbye')] as $post) {
+            static::assertSame(
+                $this->isGranted($this->securityListener($this->mapRequestPayload([$post])), $controllerMethod, [new MapRequestPayload()]),
+                $this->isGranted($this->accessControlIsGrantedListener($this->mapRequestPayload([$post])), $controllerMethod, [new MapRequestPayload()]),
+                sprintf('The two stacks disagree on "%s()" for "%s".', $controllerMethod, $post->title),
+            );
+        }
+    }
+
+    /**
      * A custom message is the one thing both stacks say alike, and it is what an application relies
      * on. The default message is the pinned divergence, kept as it is above.
      */
@@ -270,7 +329,7 @@ final class IsGrantedParityTest extends TestCase
      * The voter list must be replayable, and its expression voter needs the checker that is built
      * from the very manager the list is given to, hence the lazy generator below.
      */
-    private function securityListener(): IsGrantedAttributeListener
+    private function securityListener(?Closure $mapRequestPayload = null): IsGrantedAttributeListener
     {
         $voters = new class(new SecurityRoleHierarchy(self::HIERARCHY)) implements IteratorAggregate {
             public ?AuthorizationCheckerInterface $authChecker = null;
@@ -291,7 +350,7 @@ final class IsGrantedParityTest extends TestCase
         $checker = new AuthorizationChecker($this->tokenStorage(), new AccessDecisionManager($voters));
         $voters->authChecker = $checker;
 
-        return new IsGrantedAttributeListener($checker, new BaseExpressionLanguage());
+        return new IsGrantedAttributeListener($checker, new BaseExpressionLanguage(), $mapRequestPayload);
     }
 
     private function accessControlListener(): AccessPolicyListener
@@ -304,9 +363,19 @@ final class IsGrantedParityTest extends TestCase
      * nobody reads the attribute at all once SecurityBundle is gone, so a guarded controller used
      * to answer 200 without a word.
      */
-    private function accessControlIsGrantedListener(): IsGrantedListener
+    private function accessControlIsGrantedListener(?Closure $mapRequestPayload = null): IsGrantedListener
     {
-        return new IsGrantedListener(new TokenStorageRequesterProvider($this->tokenStorage()), $this->evaluator(), new BaseExpressionLanguage());
+        return new IsGrantedListener(new TokenStorageRequesterProvider($this->tokenStorage()), $this->evaluator(), new BaseExpressionLanguage(), $mapRequestPayload);
+    }
+
+    /**
+     * Stands for RequestPayloadValueResolver, which replaces the attribute with the object it maps.
+     *
+     * @param list<mixed> $mappedArguments
+     */
+    private function mapRequestPayload(array $mappedArguments): Closure
+    {
+        return static fn (ControllerArgumentsEvent $event) => $event->setArguments($mappedArguments);
     }
 
     private function evaluator(): AccessPolicyEvaluator

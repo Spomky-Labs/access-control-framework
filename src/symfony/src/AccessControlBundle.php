@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AccessControl\Bundle;
 
+use AccessControl\Bundle\DependencyInjection\Compiler\IsGrantedRequestPayloadPass;
 use AccessControl\Bundle\DependencyInjection\Compiler\SecurityBridgePass;
 use AccessControl\Bundle\DependencyInjection\Compiler\WorkflowGuardPass;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
@@ -30,6 +31,7 @@ class AccessControlBundle extends Bundle
         parent::build($container);
 
         $container->addCompilerPass(new SecurityBridgePass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 100);
+        $container->addCompilerPass(new IsGrantedRequestPayloadPass());
 
         if (class_exists(GuardEvent::class)) {
             $container->addCompilerPass(new WorkflowGuardPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 100);

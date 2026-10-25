@@ -16,10 +16,16 @@ use Closure;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
+use Symfony\Component\ExpressionLanguage\Parser;
+use Symfony\Component\ExpressionLanguage\SyntaxError;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
 use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use function array_any;
 use function in_array;
 use function is_array;
 use function is_object;
@@ -40,11 +46,14 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
     /**
      * The expression language is optional and only ever used to resolve a subject given as an
      * Expression, which is the one thing PHP lets an attribute carry beyond a plain string.
+     *
+     * @param (Closure(ControllerArgumentsEvent): void)|null $mapRequestPayload Maps the arguments that #[MapRequestPayload], #[MapQueryString] or #[MapUploadedFile] did not map yet
      */
     public function __construct(
         private RequesterProviderInterface $requesterProvider,
         private AccessPolicyEvaluator $accessPolicyEvaluator,
         private ?ExpressionLanguage $expressionLanguage = null,
+        private ?Closure $mapRequestPayload = null,
     ) {
     }
 
@@ -57,18 +66,8 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
 
     public function onKernelControllerArguments(ControllerArgumentsEvent $event): void
     {
-        $context = new AccessPolicyContext(
-            $this->requesterProvider->getRequester(),
-            $event->getNamedArguments(),
-            [
-                AccessEnvironment::REQUEST => $event->getRequest(),
-                'args' => $event->getArguments(),
-            ],
-            self::originOf($event->getController()),
-        );
-
         foreach ($event->getAttributes(IsGranted::class) as $attribute) {
-            $this->enforce($attribute, $context, $event);
+            $this->enforce($attribute, $event);
         }
     }
 
@@ -110,11 +109,25 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
      * The request is read here rather than through a When composite: the point is to reproduce what
      * Security did with this very attribute, not to restate it in the component's own words.
      */
-    private function enforce(IsGranted $attribute, AccessPolicyContext $context, ControllerArgumentsEvent $event): void
+    private function enforce(IsGranted $attribute, ControllerArgumentsEvent $event): void
     {
         if ($attribute->methods && ! in_array($event->getRequest()->getMethod(), $attribute->methods, true)) {
             return;
         }
+
+        if ($this->mapRequestPayload !== null && $attribute->subject !== null && array_any(is_array($attribute->subject) ? $attribute->subject : [$attribute->subject], fn (mixed $reference): bool => $this->readsUnmappedArguments($reference, $event))) {
+            ($this->mapRequestPayload)($event);
+        }
+
+        $context = new AccessPolicyContext(
+            $this->requesterProvider->getRequester(),
+            $event->getNamedArguments(),
+            [
+                AccessEnvironment::REQUEST => $event->getRequest(),
+                'args' => $event->getArguments(),
+            ],
+            self::originOf($event->getController()),
+        );
 
         if ($this->accessPolicyEvaluator->evaluate($this->translate($attribute, $event), $context)->decision !== DecisionVote::ACCESS_DENIED) {
             return;
@@ -127,6 +140,45 @@ final readonly class IsGrantedListener implements EventSubscriberInterface
         }
 
         throw new AccessDeniedException($message, $attribute->exceptionCode ?? 403);
+    }
+
+    /**
+     * The same answer Security gives since Symfony 8.2: a subject reads an argument when it names
+     * it, when it is an Expression that uses args, or when it is a Closure, which always receives
+     * them. Any other subject is checked before the payload is mapped and validated.
+     */
+    private function readsUnmappedArguments(mixed $reference, ControllerArgumentsEvent $event): bool
+    {
+        if (is_string($reference)) {
+            $argument = $event->getNamedArguments()[$reference] ?? null;
+
+            return self::isUnmapped($argument) || (is_array($argument) && array_any($argument, self::isUnmapped(...)));
+        }
+
+        if (! array_any($event->getArguments(), self::isUnmapped(...))) {
+            return false;
+        }
+
+        if ($reference instanceof Closure) {
+            return true;
+        }
+
+        if (! $reference instanceof Expression) {
+            return false;
+        }
+
+        try {
+            $this->expressionLanguage?->lint($reference, ['request', 'this'], Parser::IGNORE_UNKNOWN_FUNCTIONS);
+        } catch (SyntaxError) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static function isUnmapped(mixed $argument): bool
+    {
+        return $argument instanceof MapRequestPayload || $argument instanceof MapQueryString || $argument instanceof MapUploadedFile;
     }
 
     private static function originOf(mixed $controller): string

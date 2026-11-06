@@ -21,7 +21,13 @@ Both are read-only subtree splits of this repository. Issues and pull requests b
 
 # Documentation
 
-The documentation can be read on the following website: https://acf.spomky-labs.com/
+The documentation is at **<https://docs.spomky-labs.com/acf/>**, one version per maintained branch.
+
+* [Installation](https://docs.spomky-labs.com/acf/latest/the-project/installation/)
+* [Vocabulary](https://docs.spomky-labs.com/acf/latest/access-control-in-a-nutshell/vocabulary/) — start here: `subject` is the resource, not the actor.
+* [The manager](https://docs.spomky-labs.com/acf/latest/pure-php/the-manager/) — using it without a framework.
+* [The Symfony bundle](https://docs.spomky-labs.com/acf/latest/symfony-bundle/installation/)
+* [The two migrations](https://docs.spomky-labs.com/acf/latest/migration/the-two-migrations/) — coming from Symfony Security.
 
 # Support
 
